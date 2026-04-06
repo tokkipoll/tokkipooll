@@ -1,13 +1,95 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 첫 웹사이트</title>
-</head>
-<body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eyes on the Road</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1 id="site-title"></h1>
+      <p id="site-desc"></p>
+    </header>
 
-    <h1>안녕하세요!</h1>
+    <section class="works">
+      <div id="grid"></div>
+    </section>
 
-</body>
+    <script>
+      const SPREADSHEET_ID = "1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us";
+      const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
+
+      // 쉼표와 따옴표 문제를 완벽하게 방어하는 분석 함수
+      function parseCSVLine(line) {
+        const result = [];
+        let cur = "";
+        let inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          let char = line[i];
+          if (char === '"') inQuote = !inQuote;
+          else if (char === "," && !inQuote) {
+            result.push(cur.trim().replace(/^"|"$/g, ""));
+            cur = "";
+          } else cur += char;
+        }
+        result.push(cur.trim().replace(/^"|"$/g, ""));
+        return result;
+      }
+
+      fetch(CSV_URL)
+        .then(res => res.text())
+        .then(text => {
+          const lines = text.trim().split("\n");
+          const headers = parseCSVLine(lines[0]);
+          const rows = lines.slice(1).map(line => parseCSVLine(line));
+
+          const grid = document.getElementById("grid");
+          grid.innerHTML = ""; 
+
+          // 헤더 이름으로 정확한 열 번호 찾기
+          const idx = {
+            name: headers.indexOf("name"),
+            result: headers.indexOf("result"),
+            paper: headers.indexOf("paper"),
+            time: headers.indexOf("time"),
+            point: headers.indexOf("point")
+          };
+
+          rows.forEach(row => {
+            if (idx.name === -1 || !row[idx.name] || row[idx.name] === "name") return;
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            // 💡 하민 님의 폴더 구조 반영 경로
+            const folderPath = "foldingpapers/assets/after/";
+            const fileName = row[idx.result]; 
+
+            if (fileName && fileName.includes(".png")) {
+              const img = document.createElement("img");
+              img.src = folderPath + fileName; 
+              img.alt = row[idx.name];
+              
+              // 에러 발생 시 파일명 공백 문제 등을 해결하기 위한 로그 출력
+              img.onerror = () => {
+                console.error("사진을 찾지 못함:", img.src);
+              };
+              card.appendChild(img);
+            }
+
+            const body = document.createElement("div");
+            body.className = "card-body";
+            body.innerHTML = `
+              <p class="project-name"><strong>${row[idx.name]}</strong></p>
+              <p class="project-meta">${row[idx.time] || ""} | ${row[idx.paper] || ""}</p>
+              <p class="project-note">${row[idx.point] || ""}</p>
+            `;
+            card.appendChild(body);
+            grid.appendChild(card);
+          });
+        })
+        .catch(err => console.error("CSV 로드 에러:", err));
+    </script>
+  </body>
 </html>
