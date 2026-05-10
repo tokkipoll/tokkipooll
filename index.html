@@ -3,90 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Ratio Archive</title>
+<title>tokkipooll - Perfect Ratio Match</title>
 <style>
   body {
     margin: 0; padding: 0; width: 100vw; height: 100vh;
     background-color: #ffffff; 
     background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
     background-size: 20px 20px;
-    overflow-y: auto; overflow-x: hidden; user-select: none; cursor: crosshair; 
+    overflow: hidden; user-select: none; cursor: crosshair; 
     font-family: 'Pretendard', sans-serif;
   }
-
-  /* 상단 좌표 및 상태 표시 */
-  .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; letter-spacing: 1px; }
-  
-  /* 하단 컨트롤 패널 */
+  .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; }
   .control-panel { 
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
     display: flex; align-items: center; gap: 20px; z-index: 1000; 
-    background: rgba(255, 255, 255, 0.9); padding: 12px 30px; border-radius: 40px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; backdrop-filter: blur(10px);
+    background: white; padding: 12px 30px; border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
   }
-  .control-panel label { font-size: 11px; color: #aaa; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
   .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
-  
-  input[type="range"] { -webkit-appearance: none; width: 150px; height: 2px; background: #eee; outline: none; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b48ff; border-radius: 50%; cursor: pointer; transition: 0.2s; }
-  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-  /* 드래그 흔적 박스 */
-  .drag-box { 
-    position: absolute; background-color: rgba(255, 255, 255, 0.05); 
-    border: 0.5px solid rgba(59, 72, 255, 0.2); box-sizing: border-box; overflow: visible; 
-  }
-  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-
-  .dim-label { 
-    position: absolute; top: -20px; left: 0; font-size: 9px; 
-    font-weight: 700; color: #3b48ff; white-space: nowrap; 
-  }
-
-  .content-wrapper { 
-    width: 100%; height: 100%; display: flex; flex-wrap: wrap; 
-    justify-content: center; align-items: center; gap: 10px; padding: 10px; box-sizing: border-box; overflow: hidden;
-  }
-
-  .item-card { 
-    display: flex; flex-direction: column; align-items: center; 
-    max-width: 90%; max-height: 90%; animation: fadeIn 0.4s ease-out;
-  }
+  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.5); border: 1px dashed #3b48ff; box-sizing: border-box; }
+  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .dim-label { position: absolute; top: -20px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; }
+  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; overflow: hidden; }
+  .item-card { display: flex; flex-direction: column; align-items: center; max-width: 95%; max-height: 95%; }
   .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
-  .item-name { font-size: 10px; font-weight: 800; color: #333; margin-top: 8px; text-transform: lowercase; letter-spacing: -0.5px; }
-
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-  .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 2000; display: none; align-items: center; justify-content: center; }
-  .modal.active { display: flex; }
+  .item-name { font-size: 10px; font-weight: 800; margin-top: 5px; color: #333; }
 </style>
 </head>
 <body>
 
 <div id="coordTracker" class="coord-tracker">000 / 000</div>
-
 <div class="control-panel">
-  <label>Tolerance</label>
-  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.2">
-  <span id="tolValue" class="tol-value">20%</span>
-</div>
-
-<div id="detailModal" class="modal">
-  <div style="text-align:center; padding:40px;">
-    <img id="modalImg" src="" style="max-width:300px; margin-bottom:30px;">
-    <h1 id="modalTitle" style="font-size:32px; letter-spacing:-1px;"></h1>
-    <p id="modalPoint" style="max-width:400px; font-size:14px; color:#666; line-height:1.7;"></p>
-    <button onclick="this.parentElement.parentElement.classList.remove('active')" style="margin-top:40px; padding:12px 30px; border:1px solid #333; background:none; font-weight:800; cursor:pointer;">CLOSE</button>
-  </div>
+  <label style="font-size:11px; font-weight:800; color:#aaa;">TOLERANCE</label>
+  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.3">
+  <span id="tolValue" class="tol-value">30%</span>
 </div>
 
 <script>
+  // 🌟 하민님의 최신 시트 정보 반영
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
   let database = [];
 
-  // 1. 데이터 로드: 시트의 비율을 정규화(항상 1보다 크게)해서 저장
+  // 데이터 로드 및 비율 숫자 변환 함수
   async function init() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     try {
@@ -97,44 +56,45 @@
       database = rows.map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const rawRatio = cols[4]; // E열: ratio (6:4 등)
+          const rawRatio = cols[4]; // E열의 비율 데이터
           let val = 1;
-          const match = rawRatio.match(/^(\d+(\.\d+)?)/);
-          if (match) val = parseFloat(match[1]);
+
+          // '6:4' 또는 '1:2.5' 형태에서 실제 비율 숫자를 계산
+          if (rawRatio.includes(':')) {
+            const parts = rawRatio.split(':');
+            val = parseFloat(parts[0]) / parseFloat(parts[1]);
+          } else {
+            val = parseFloat(rawRatio) || 1;
+          }
           
-          // 가로세로 상관없이 비교하기 위해 '큰 값 / 작은 값'으로 정규화
+          // 비율 정규화 (항상 1보다 큰 값으로 변환하여 비교 용이하게 함)
           const normRatio = val >= 1 ? val : 1 / val;
 
-          return { name: cols[0], image: cols[2], ratio: normRatio, point: cols[8] || "" };
+          return { name: cols[0], image: cols[2], ratio: normRatio };
         }
         return null;
       }).filter(d => d !== null);
-      console.log("Database Loaded:", database);
-    } catch (e) { console.error("Load Error", e); }
+      console.log("Database Ready:", database);
+    } catch (e) { console.error("Data Load Error", e); }
   }
 
   init();
 
   const slider = document.getElementById('toleranceSlider');
   const tolText = document.getElementById('tolValue');
-  slider.oninput = (e) => {
-    let val = Math.round((parseFloat(e.target.value) - 1) * 100);
-    tolText.textContent = val + "%";
-  };
+  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
 
   let isDragging = false;
   let startX, startY, currentBox, label;
 
   document.onmousedown = (e) => {
-    if (e.target.closest('.control-panel') || e.target.closest('.modal')) return;
+    if (e.target.closest('.control-panel')) return;
     isDragging = true;
     startX = e.clientX; startY = e.clientY;
-    
     currentBox = document.createElement('div');
     currentBox.className = 'drag-box';
     label = document.createElement('div');
     label.className = 'dim-label';
-    
     currentBox.appendChild(label);
     currentBox.style.left = startX + 'px';
     currentBox.style.top = startY + 'px';
@@ -144,17 +104,15 @@
   document.onmousemove = (e) => {
     document.getElementById('coordTracker').textContent = `${e.clientX} / ${e.clientY}`;
     if (!isDragging) return;
-    
     let w = Math.abs(e.clientX - startX);
     let h = Math.abs(e.clientY - startY);
     currentBox.style.width = w + 'px';
     currentBox.style.height = h + 'px';
     currentBox.style.left = Math.min(e.clientX, startX) + 'px';
     currentBox.style.top = Math.min(e.clientY, startY) + 'px';
-    
     if (w > 0 && h > 0) {
       const r = Math.max(w, h) / Math.min(w, h);
-      label.textContent = `Ratio 1:${r.toFixed(2)}`;
+      label.textContent = `1:${r.toFixed(2)}`;
     }
   };
 
@@ -165,16 +123,15 @@
     const w = parseInt(currentBox.style.width);
     const h = parseInt(currentBox.style.height);
 
-    if (w > 20 && h > 20) {
+    if (w > 25 && h > 25) {
       const userRatio = Math.max(w, h) / Math.min(w, h);
-      const tol = parseFloat(slider.value); // 1.0 ~ 2.0 (0% ~ 100%)
+      const tol = parseFloat(slider.value);
 
-      // 🌟 핵심 로직: 드래그 비율과 시트 비율의 차이가 오차범위(Tolerance) 내에 있는지 확인
+      // 🌟 핵심: 사용자 비율과 시트 비율의 '거리'가 가장 가까운 것 찾기
       const matched = database.filter(item => {
         const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
-        return diff <= tol; // 1.2면 20% 오차까지 허용
+        return diff <= tol; 
       }).sort((a, b) => {
-        // 가장 닮은 순서대로 정렬
         const diffA = Math.max(userRatio / a.ratio, a.ratio / userRatio);
         const diffB = Math.max(userRatio / b.ratio, b.ratio / userRatio);
         return diffA - diffB;
@@ -182,36 +139,20 @@
 
       if (matched.length > 0) {
         currentBox.classList.add('active-result');
-        const wrapper = document.createElement('div');
-        wrapper.className = 'content-wrapper';
-        
-        // 가장 유사한 상위 항목들 표시 (공간에 따라 1~2개)
-        matched.slice(0, 1).forEach(item => {
-          wrapper.innerHTML = `
-            <div class="item-card" onclick="showDetail('${item.name}')">
-              <img src="${baseFolder}${item.image}" alt="${item.name}">
-              <div class="item-name">${item.name}</div>
+        const bestMatch = matched[0]; // 가장 유사한 1등만 표시
+        currentBox.innerHTML = `
+          <div class="content-wrapper">
+            <div class="item-card">
+              <img src="${baseFolder}${bestMatch.image}" alt="${bestMatch.name}" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
+              <div class="item-name">${bestMatch.name}</div>
             </div>
-          `;
-        });
-        currentBox.appendChild(wrapper);
-        label.style.display = 'none';
+          </div>
+        `;
       } else {
-        currentBox.remove(); // 맞는 게 없으면 흔적 삭제
+        currentBox.remove(); 
       }
-    } else {
-      currentBox.remove();
-    }
+    } else { currentBox.remove(); }
   };
-
-  function showDetail(name) {
-    const item = database.find(d => d.name === name);
-    if (!item) return;
-    document.getElementById('modalImg').src = baseFolder + item.image;
-    document.getElementById('modalTitle').textContent = item.name;
-    document.getElementById('modalPoint').textContent = item.point;
-    document.getElementById('detailModal').classList.add('active');
-  }
 </script>
 </body>
 </html>
