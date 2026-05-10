@@ -3,119 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Interactive Canvas</title>
+<title>tokkipooll - Final Debug Sync</title>
 <style>
-  /* 기본 설정: 하얀 빈 화면 */
   body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #ffffff;
-    overflow: hidden; /* 스크롤바 방지 */
-    user-select: none; /* 드래그 시 텍스트 파란색으로 선택되는 현상 방지 */
-    cursor: crosshair; /* 캔버스 느낌을 주기 위해 마우스 커서를 십자선으로 변경 */
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    background-color: #ffffff; overflow: hidden; 
+    user-select: none; cursor: crosshair; 
   }
 
-  /* 드래그할 때 생성되는 파란색 박스 */
   .drag-box {
     position: absolute;
-    background-color: #3b48ff; /* 레퍼런스의 쨍한 파란색 */
-    overflow: hidden; /* 박스 크기를 넘어가는 내부 콘텐츠를 숨김 (마스크 효과) */
-    pointer-events: none; /* 박스가 마우스 이벤트를 방해하지 않도록 설정 */
-  }
-
-  /* 박스 내부의 콘텐츠 영역 (이미지들이 길게 나열되는 곳) */
-  .drag-content {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 20px;
-    width: max-content; /* 내부 이미지들의 너비만큼 영역 확보 */
-    height: 100%;
+    background-color: rgba(59, 72, 255, 0.02); 
+    border: 1px solid rgba(59, 72, 255, 0.15);
+    overflow: hidden; pointer-events: none; 
+    display: flex; align-items: center;
     box-sizing: border-box;
   }
 
-  /* 박스 내부 이미지 스타일 */
-  .drag-content img {
-    height: 120px; /* 이미지 높이 고정 */
-    object-fit: contain;
-    /* 실제 작업물 이미지가 없을 때를 대비한 임시 배경 */
-    background-color: #f0f0f0; 
+  .drag-content {
+    display: flex; align-items: center;
+    gap: 12px; padding: 10px;
+    width: max-content; height: 100%;
+    box-sizing: border-box;
   }
 
-  /* 화면 중앙에 띄울 안내 문구 (선택 사항) */
+  .drag-content img {
+    height: 85%; width: auto;
+    object-fit: contain; display: block;
+  }
+
+  /* 상태 확인용 바 (문제가 생기면 여기서 확인 가능) */
+  #status-bar {
+    position: fixed; bottom: 15px; left: 15px;
+    font-family: monospace; font-size: 10px;
+    color: #3b48ff; background: rgba(255,255,255,0.9);
+    padding: 6px 10px; border: 1px solid #3b48ff;
+    z-index: 100; max-width: 80%;
+  }
+
   .instruction {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    font-family: sans-serif;
-    color: #cccccc;
-    pointer-events: none;
-    z-index: -1;
+    font-family: sans-serif; color: #f0f0f0;
+    pointer-events: none; z-index: -1;
+    font-size: 1rem; text-align: center;
   }
 </style>
 </head>
 <body>
 
-  <div class="instruction">화면을 드래그해 보세요</div>
+  <div id="status-bar">System initializing...</div>
+  <div class="instruction">화면을 드래그하세요<br>시트 데이터 연동 테스트 중</div>
 
 <script>
   let isDragging = false;
   let startX, startY;
   let currentBox = null;
+  let weightedImagePool = []; 
+
+  // --- 설정 (이 부분은 수정하지 마세요) ---
+  const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
+  const gid = '59083326'; 
+  const baseFolder = 'foldingpapers/assets/'; 
+  // ------------------------------------
+
+  async function loadSheet() {
+    const status = document.getElementById('status-bar');
+    try {
+      status.innerText = "Step 1: Fetching data from Google...";
+      
+      // 캐시 방지를 위해 시간값을 붙여서 새로고침 반영을 빠르게 함
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&t=${new Date().getTime()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      
+      const text = await response.text();
+      status.innerText = "Step 2: Parsing CSV data...";
+      
+      // 줄바꿈 정제 (윈도우/맥/리눅스 호환)
+      const rows = text.split(/\r?\n/).map(row => {
+        // 쉼표로 나누되, 따옴표 안의 쉼표는 무시하는 정규식
+        return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      });
+      
+      let pool = [];
+
+      // 2번째 줄(인덱스 1)부터 데이터 시작
+      for (let i = 1; i < rows.length; i++) {
+        let cols = rows[i];
+        if (!cols || cols.length < 2) continue;
+
+        let name = cols[0].replace(/"/g, '').trim(); // 따옴표 제거 및 공백 제거
+        let count = parseInt(cols[1].replace(/"/g, '').trim());
+
+        if (name && !isNaN(count) && count > 0) {
+          const fileName = name.toLowerCase().endsWith('.png') ? name : `${name}.png`;
+          for (let j = 0; j < count; j++) {
+            pool.push(fileName);
+          }
+        }
+      }
+
+      if (pool.length === 0) throw new Error("No valid data found in sheet rows.");
+
+      weightedImagePool = pool;
+      status.innerText = `SUCCESS: Loaded ${pool.length} items. Ready to drag!`;
+      status.style.backgroundColor = "#eef0ff";
+
+      // 5초 후 상태 바 깔끔하게 숨기기
+      setTimeout(() => { status.style.opacity = '0.3'; }, 5000);
+
+    } catch (err) {
+      console.error(err);
+      status.innerText = `ERROR: ${err.message}. Check 'Web Publish' settings.`;
+      status.style.color = "red";
+      status.style.border = "1px solid red";
+    }
+  }
+
+  loadSheet();
 
   document.addEventListener('mousedown', (e) => {
+    if (weightedImagePool.length === 0) return;
+
     isDragging = true;
     startX = e.clientX;
     startY = e.clientY;
 
-    // 1. 새로운 박스 생성
     currentBox = document.createElement('div');
     currentBox.className = 'drag-box';
     
-    // 2. 박스 안에 들어갈 콘텐츠(이미지) 래퍼 생성
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
     
-    // 준비 중이신 피스 진(Piece Zine)이나 물고기 접기 작업물 이미지 경로를 src에 넣어주세요.
-    // 현재는 테스트를 위한 임시 플레이스홀더 이미지를 넣었습니다.
-    contentWrapper.innerHTML = `
-      <img src="https://via.placeholder.com/150x120/ffffff/3b48ff?text=Piece+Zine+1" alt="토끼풀 피스 진 1">
-      <img src="https://via.placeholder.com/150x120/ffffff/3b48ff?text=Piece+Zine+2" alt="물고기 접기 1">
-      <img src="https://via.placeholder.com/150x120/ffffff/3b48ff?text=Piece+Zine+3" alt="토끼풀 피스 진 2">
-      <img src="https://via.placeholder.com/150x120/ffffff/3b48ff?text=Piece+Zine+4" alt="물고기 접기 2">
-      <img src="https://via.placeholder.com/150x120/ffffff/3b48ff?text=Piece+Zine+5" alt="토끼풀 피스 진 3">
-    `;
+    // 드래그 시 한 번에 보여줄 이미지 개수
+    for (let i = 0; i < 15; i++) {
+      const randomImg = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
+      const imgTag = document.createElement('img');
+      imgTag.src = baseFolder + randomImg;
+      imgTag.onerror = function() { this.style.display = 'none'; }; // 사진 없으면 숨김
+      contentWrapper.appendChild(imgTag);
+    }
 
     currentBox.appendChild(contentWrapper);
-
-    // 3. 박스 초기 위치 설정 (마우스 클릭한 지점)
     currentBox.style.left = startX + 'px';
     currentBox.style.top = startY + 'px';
     currentBox.style.width = '0px';
     currentBox.style.height = '0px';
 
-    // 4. 화면에 박스 추가
     document.body.appendChild(currentBox);
   });
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging || !currentBox) return;
-
-    const currentX = e.clientX;
-    const currentY = e.clientY;
-
-    // 5. 마우스 이동 거리를 계산하여 박스의 너비와 높이 결정
-    const width = Math.abs(currentX - startX);
-    const height = Math.abs(currentY - startY);
-
-    // 6. 마우스를 왼쪽이나 위로 드래그할 경우를 대비해 시작 좌표 보정
-    const left = Math.min(currentX, startX);
-    const top = Math.min(currentY, startY);
-
-    // 7. 계산된 값을 박스에 적용하여 실시간으로 크기 조절
+    const width = Math.abs(e.clientX - startX);
+    const height = Math.abs(e.clientY - startY);
+    const left = Math.min(e.clientX, startX);
+    const top = Math.min(e.clientY, startY);
     currentBox.style.width = width + 'px';
     currentBox.style.height = height + 'px';
     currentBox.style.left = left + 'px';
@@ -123,10 +168,8 @@
   });
 
   document.addEventListener('mouseup', () => {
-    // 8. 드래그 종료 시 상태 초기화
     isDragging = false;
     currentBox = null; 
-    // 생성된 박스는 화면에 계속 남게 됩니다.
   });
 </script>
 
