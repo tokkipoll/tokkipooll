@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Interactive Database</title>
+<title>tokkipooll - Interactive Canvas</title>
 <style>
   body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
   .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
@@ -15,8 +15,8 @@
 </head>
 <body>
 
-  <div id="status-bar">Connecting to Tokkipooll...</div>
-  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database Linked</div>
+  <div id="status-bar">Smart Syncing...</div>
+  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database v4</div>
 
 <script>
   let isDragging = false;
@@ -30,46 +30,59 @@
 
   async function loadData() {
     const status = document.getElementById('status-bar');
-    // 캐시 방지를 위해 랜덤 쿼리 추가
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&cacheburst=${new Date().getTime()}`;
+    // 최신 데이터를 위해 캐시 무시 주소 사용
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&v=${Math.random()}`;
 
     try {
       const response = await fetch(url);
       const csvText = await response.text();
-      const rows = csvText.split('\n');
+      
+      // 줄 단위로 나누기
+      const rows = csvText.split(/\r?\n/);
+      if (rows.length < 2) throw new Error('시트가 비어있습니다.');
+
+      // 첫 줄(헤더)에서 각 열의 위치 찾기
+      const header = rows[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+      const resultIdx = header.indexOf('result'); // C열 제목
+      const ratioIdx = header.indexOf('ratio');  // E열 제목
+
+      if (resultIdx === -1 || ratioIdx === -1) {
+        throw new Error("'result'와 'ratio' 열 제목을 찾을 수 없습니다.");
+      }
+
       let pool = [];
 
       for (let i = 1; i < rows.length; i++) {
-        // 쉼표로 나누되, 따옴표 안의 쉼표는 무시하는 정규식 사용
-        const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-        
-        if (cols.length >= 5) {
-          const name = cols[2]; // C열: result (파일명)
-          const ratioStr = cols[4]; // E열: ratio (예: 6:4)
+        // 따옴표를 고려한 쉼표 분리 (정밀 파싱)
+        const cols = rows[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        if (!cols || !cols[resultIdx]) continue;
 
-          // 비율 텍스트에서 첫 번째 숫자 추출 (예: '6:4' -> 6, '1:2.5' -> 1)
-          let count = 0;
-          if (ratioStr) {
-            const match = ratioStr.match(/^(\d+(\.\d+)?)/); 
-            if (match) count = Math.ceil(parseFloat(match[1]) * 10); // 소수점 대비 10 곱하기
-          }
+        const name = cols[resultIdx].replace(/"/g, '').trim();
+        const ratioStr = cols[ratioIdx].replace(/"/g, '').trim();
 
-          if (name && name.includes('.png') && count > 0) {
-            for (let j = 0; j < count; j++) {
-              pool.push(name);
-            }
+        // 비율 추출 (6:4 -> 6, 1:2.5 -> 1)
+        let count = 0;
+        const match = ratioStr.match(/^(\d+(\.\d+)?)/);
+        if (match) {
+          count = Math.max(1, Math.round(parseFloat(match[1]) * 5)); // 최소 1개는 나오게 가중치 조절
+        }
+
+        if (name && name.toLowerCase().endsWith('.png') && count > 0) {
+          for (let j = 0; j < count; j++) {
+            pool.push(name);
           }
         }
       }
 
-      if (pool.length === 0) throw new Error('Data Parsing Failed');
+      if (pool.length === 0) throw new Error('조건에 맞는 이미지가 없습니다.');
       
       weightedImagePool = pool;
-      status.innerText = `SUCCESS: ${pool.length} items loaded!`;
-      setTimeout(() => status.style.opacity = '0.3', 2000);
+      status.innerText = `READY: ${pool.length} items sync success!`;
+      setTimeout(() => status.style.opacity = '0.3', 3000);
 
     } catch (err) {
-      status.innerText = "Error: 시트 데이터 형식을 확인하세요 (C열:파일명, E열:비율)";
+      console.error(err);
+      status.innerText = `Error: ${err.message}`;
       status.style.color = "red";
     }
   }
@@ -85,7 +98,8 @@
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
     
-    for (let i = 0; i < 15; i++) {
+    // 드래그 시 한 번에 보여줄 이미지 개수 (20개로 상향)
+    for (let i = 0; i < 20; i++) {
       const imgName = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
       const imgTag = document.createElement('img');
       imgTag.src = baseFolder + imgName;
