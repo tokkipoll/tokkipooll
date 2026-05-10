@@ -3,57 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Final Debug Sync</title>
+<title>tokkipooll - Data Visualization</title>
 <style>
-  body {
-    margin: 0; padding: 0; width: 100vw; height: 100vh;
-    background-color: #ffffff; overflow: hidden; 
-    user-select: none; cursor: crosshair; 
-  }
-
-  .drag-box {
-    position: absolute;
-    background-color: rgba(59, 72, 255, 0.02); 
-    border: 1px solid rgba(59, 72, 255, 0.15);
-    overflow: hidden; pointer-events: none; 
-    display: flex; align-items: center;
-    box-sizing: border-box;
-  }
-
-  .drag-content {
-    display: flex; align-items: center;
-    gap: 12px; padding: 10px;
-    width: max-content; height: 100%;
-    box-sizing: border-box;
-  }
-
-  .drag-content img {
-    height: 85%; width: auto;
-    object-fit: contain; display: block;
-  }
-
-  /* 상태 확인용 바 (문제가 생기면 여기서 확인 가능) */
-  #status-bar {
-    position: fixed; bottom: 15px; left: 15px;
-    font-family: monospace; font-size: 10px;
-    color: #3b48ff; background: rgba(255,255,255,0.9);
-    padding: 6px 10px; border: 1px solid #3b48ff;
-    z-index: 100; max-width: 80%;
-  }
-
-  .instruction {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: sans-serif; color: #f0f0f0;
-    pointer-events: none; z-index: -1;
-    font-size: 1rem; text-align: center;
-  }
+  body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
+  .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
+  .drag-content { display: flex; align-items: center; gap: 12px; padding: 10px; width: max-content; height: 100%; box-sizing: border-box; }
+  .drag-content img { height: 85%; width: auto; object-fit: contain; display: block; }
+  #status-bar { position: fixed; bottom: 15px; left: 15px; font-family: monospace; font-size: 10px; color: #3b48ff; background: rgba(255,255,255,0.9); padding: 6px 10px; border: 1px solid #3b48ff; z-index: 100; }
+  .instruction { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #f0f0f0; pointer-events: none; z-index: -1; font-size: 1rem; text-align: center; }
 </style>
 </head>
 <body>
 
-  <div id="status-bar">System initializing...</div>
-  <div class="instruction">화면을 드래그하세요<br>시트 데이터 연동 테스트 중</div>
+  <div id="status-bar">Connecting to Database...</div>
+  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Data Sync Active</div>
 
 <script>
   let isDragging = false;
@@ -61,117 +24,86 @@
   let currentBox = null;
   let weightedImagePool = []; 
 
-  // --- 설정 (이 부분은 수정하지 마세요) ---
+  // --- 설정 데이터 ---
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
-  // ------------------------------------
 
-  async function loadSheet() {
+  async function loadData() {
     const status = document.getElementById('status-bar');
+    // 구글 시트 웹 게시 CSV 경로 (가장 안정적인 형식)
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv`;
+
     try {
-      status.innerText = "Step 1: Fetching data from Google...";
-      
-      // 캐시 방지를 위해 시간값을 붙여서 새로고침 반영을 빠르게 함
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&t=${new Date().getTime()}`;
-      
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      if (!response.ok) throw new Error('네트워크 응답 에러');
+      const csvText = await response.text();
       
-      const text = await response.text();
-      status.innerText = "Step 2: Parsing CSV data...";
-      
-      // 줄바꿈 정제 (윈도우/맥/리눅스 호환)
-      const rows = text.split(/\r?\n/).map(row => {
-        // 쉼표로 나누되, 따옴표 안의 쉼표는 무시하는 정규식
-        return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-      });
-      
+      const rows = csvText.split('\n');
       let pool = [];
 
-      // 2번째 줄(인덱스 1)부터 데이터 시작
       for (let i = 1; i < rows.length; i++) {
-        let cols = rows[i];
-        if (!cols || cols.length < 2) continue;
-
-        let name = cols[0].replace(/"/g, '').trim(); // 따옴표 제거 및 공백 제거
-        let count = parseInt(cols[1].replace(/"/g, '').trim());
-
-        if (name && !isNaN(count) && count > 0) {
-          const fileName = name.toLowerCase().endsWith('.png') ? name : `${name}.png`;
-          for (let j = 0; j < count; j++) {
-            pool.push(fileName);
+        const cols = rows[i].split(',');
+        if (cols.length >= 2) {
+          const name = cols[0].replace(/"/g, '').trim(); 
+          const count = parseInt(cols[1].replace(/"/g, '').trim()); 
+          
+          if (name && !isNaN(count) && count > 0) {
+            const fileName = name.toLowerCase().endsWith('.png') ? name : name + '.png';
+            for (let j = 0; j < count; j++) {
+              pool.push(fileName);
+            }
           }
         }
       }
 
-      if (pool.length === 0) throw new Error("No valid data found in sheet rows.");
-
+      if (pool.length === 0) throw new Error('데이터 파싱 실패 (시트 형식을 확인하세요)');
+      
       weightedImagePool = pool;
-      status.innerText = `SUCCESS: Loaded ${pool.length} items. Ready to drag!`;
-      status.style.backgroundColor = "#eef0ff";
-
-      // 5초 후 상태 바 깔끔하게 숨기기
-      setTimeout(() => { status.style.opacity = '0.3'; }, 5000);
+      status.innerText = `Data Loaded: ${pool.length} items`;
+      setTimeout(() => status.style.opacity = '0.3', 2000);
 
     } catch (err) {
-      console.error(err);
-      status.innerText = `ERROR: ${err.message}. Check 'Web Publish' settings.`;
+      status.innerText = "Connect Error. GitHub에 푸시 후 온라인 주소에서 확인하세요.";
       status.style.color = "red";
-      status.style.border = "1px solid red";
     }
   }
 
-  loadSheet();
+  loadData();
 
   document.addEventListener('mousedown', (e) => {
     if (weightedImagePool.length === 0) return;
-
     isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-
+    startX = e.clientX; startY = e.clientY;
     currentBox = document.createElement('div');
     currentBox.className = 'drag-box';
-    
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
     
-    // 드래그 시 한 번에 보여줄 이미지 개수
+    // 비율에 따라 15개 랜덤 생성
     for (let i = 0; i < 15; i++) {
-      const randomImg = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
+      const imgName = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
       const imgTag = document.createElement('img');
-      imgTag.src = baseFolder + randomImg;
-      imgTag.onerror = function() { this.style.display = 'none'; }; // 사진 없으면 숨김
+      imgTag.src = baseFolder + imgName;
+      imgTag.onerror = function() { this.style.display = 'none'; };
       contentWrapper.appendChild(imgTag);
     }
-
     currentBox.appendChild(contentWrapper);
-    currentBox.style.left = startX + 'px';
-    currentBox.style.top = startY + 'px';
-    currentBox.style.width = '0px';
-    currentBox.style.height = '0px';
-
+    currentBox.style.left = startX + 'px'; currentBox.style.top = startY + 'px';
     document.body.appendChild(currentBox);
   });
 
   document.addEventListener('mousemove', (e) => {
-    if (!isDragging || !currentBox) return;
-    const width = Math.abs(e.clientX - startX);
-    const height = Math.abs(e.clientY - startY);
-    const left = Math.min(e.clientX, startX);
-    const top = Math.min(e.clientY, startY);
-    currentBox.style.width = width + 'px';
-    currentBox.style.height = height + 'px';
-    currentBox.style.left = left + 'px';
-    currentBox.style.top = top + 'px';
+    if (!isDragging) return;
+    const w = Math.abs(e.clientX - startX);
+    const h = Math.abs(e.clientY - startY);
+    currentBox.style.width = w + 'px'; currentBox.style.height = h + 'px';
+    currentBox.style.left = Math.min(e.clientX, startX) + 'px';
+    currentBox.style.top = Math.min(e.clientY, startY) + 'px';
   });
 
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-    currentBox = null; 
-  });
+  document.addEventListener('mouseup', () => { isDragging = false; currentBox = null; });
 </script>
-
 </body>
+</html>
 </html>
