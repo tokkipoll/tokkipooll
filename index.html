@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Final Smart Sync</title>
+<title>tokkipooll - Interactive Database</title>
 <style>
   body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
   .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
@@ -15,8 +15,8 @@
 </head>
 <body>
 
-  <div id="status-bar">Smart Sync Initializing...</div>
-  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database v3</div>
+  <div id="status-bar">Connecting to Tokkipooll...</div>
+  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database Linked</div>
 
 <script>
   let isDragging = false;
@@ -30,7 +30,8 @@
 
   async function loadData() {
     const status = document.getElementById('status-bar');
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&t=${new Date().getTime()}`;
+    // 캐시 방지를 위해 랜덤 쿼리 추가
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&cacheburst=${new Date().getTime()}`;
 
     try {
       const response = await fetch(url);
@@ -38,50 +39,37 @@
       const rows = csvText.split('\n');
       let pool = [];
 
-      rows.forEach((row, index) => {
-        if (index === 0) return; // 헤더 스킵
+      for (let i = 1; i < rows.length; i++) {
+        // 쉼표로 나누되, 따옴표 안의 쉼표는 무시하는 정규식 사용
+        const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         
-        // 쉼표로 분리하고 앞뒤 공백 및 따옴표 제거
-        const cols = row.split(',').map(c => c.replace(/"/g, '').trim());
-        
-        // 열 위치에 상관없이 데이터 찾기: 
-        // 문자가 들어있는 칸(name)과 숫자가 들어있는 칸(count)을 탐색
-        let name = "";
-        let count = 0;
+        if (cols.length >= 5) {
+          const name = cols[2]; // C열: result (파일명)
+          const ratioStr = cols[4]; // E열: ratio (예: 6:4)
 
-        cols.forEach(cell => {
-          if (!cell) return;
-          // 숫자인 경우 (비율/개수)
-          if (!isNaN(cell) && cell !== "") {
-            count = parseInt(cell);
-          } 
-          // 문자인 경우 (파일명) - 비율 텍스트(6:4 등)는 제외
-          else if (cell.length > 1 && !cell.includes(':')) {
-            name = cell;
+          // 비율 텍스트에서 첫 번째 숫자 추출 (예: '6:4' -> 6, '1:2.5' -> 1)
+          let count = 0;
+          if (ratioStr) {
+            const match = ratioStr.match(/^(\d+(\.\d+)?)/); 
+            if (match) count = Math.ceil(parseFloat(match[1]) * 10); // 소수점 대비 10 곱하기
           }
-          // 만약 6:4 같은 형식이면 앞의 숫자만 취함
-          else if (cell.includes(':')) {
-            const firstNum = parseInt(cell.split(':')[0]);
-            if (!isNaN(firstNum)) count = firstNum;
-          }
-        });
 
-        if (name && count > 0) {
-          const file = name.toLowerCase().endsWith('.png') ? name : name + '.png';
-          for (let j = 0; j < count; j++) {
-            pool.push(file);
+          if (name && name.includes('.png') && count > 0) {
+            for (let j = 0; j < count; j++) {
+              pool.push(name);
+            }
           }
         }
-      });
+      }
 
-      if (pool.length === 0) throw new Error('시트에서 파일명이나 숫자를 찾지 못했습니다.');
+      if (pool.length === 0) throw new Error('Data Parsing Failed');
       
       weightedImagePool = pool;
-      status.innerText = `SUCCESS: ${pool.length} items ready!`;
+      status.innerText = `SUCCESS: ${pool.length} items loaded!`;
       setTimeout(() => status.style.opacity = '0.3', 2000);
 
     } catch (err) {
-      status.innerText = "Error: 데이터를 찾을 수 없습니다. 시트 내용을 확인하세요.";
+      status.innerText = "Error: 시트 데이터 형식을 확인하세요 (C열:파일명, E열:비율)";
       status.style.color = "red";
     }
   }
