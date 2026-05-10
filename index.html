@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Accurate Ratio Sync</title>
+<title>tokkipooll - Exact Ratio & Mixed Canvas</title>
 <style>
   body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
   .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
-  .drag-content { display: flex; align-items: center; gap: 10px; padding: 5px; width: max-content; height: 100%; box-sizing: border-box; }
+  .drag-content { display: flex; align-items: center; gap: 8px; padding: 5px; width: max-content; height: 100%; box-sizing: border-box; }
   .drag-content img { height: 90%; width: auto; object-fit: contain; display: block; }
   #status-bar { position: fixed; bottom: 15px; left: 15px; font-family: monospace; font-size: 10px; color: #3b48ff; z-index: 100; }
 </style>
 </head>
 <body>
 
-  <div id="status-bar">Calculating Ratios...</div>
+  <div id="status-bar">Synchronizing Data...</div>
 
 <script>
   let isDragging = false;
   let startX, startY;
   let currentBox = null;
-  let imageData = []; // { name: 'puppy.png', ratio: 0.6 } 형태
+  let weightedPool = []; // 정밀하게 비율이 적용된 이미지 저장소
 
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
@@ -35,32 +35,35 @@
       const csvText = await response.text();
       const rows = csvText.split('\n');
       
-      let tempItems = [];
-      let totalRatioSum = 0;
+      let pool = [];
 
       for (let i = 1; i < rows.length; i++) {
         const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const imgFile = cols[2]; // C열
-          const ratioVal = cols[4]; // E열 (예: 6:4)
+          const imgFile = cols[2]; // C열: 파일명
+          const ratioVal = cols[4]; // E열: 비율 (예: 6:4)
 
-          let ratioNum = 0;
-          const numMatch = ratioVal.match(/^(\d+(\.\d+)?)/);
-          if (numMatch) {
-            ratioNum = parseFloat(numMatch[1]);
-            totalRatioSum += ratioNum;
-            tempItems.push({ name: imgFile, weight: ratioNum });
+          // 정밀 숫자 추출 및 가중치 적용 (소수점 고려)
+          let weight = 0;
+          const match = ratioVal.match(/^(\d+(\.\d+)?)/);
+          if (match) {
+            // 소수점 둘째자리까지 고려하여 100을 곱함 (1:2.5 -> 250)
+            weight = Math.round(parseFloat(match[1]) * 100); 
+          }
+
+          if (imgFile && imgFile.toLowerCase().endsWith('.png') && weight > 0) {
+            // 비율(가중치)만큼 풀에 파일명을 중복해서 넣음
+            for (let j = 0; j < weight; j++) {
+              pool.push(imgFile);
+            }
           }
         }
       }
 
-      // 각 항목의 절대적 비중 계산 (0~1 사이)
-      imageData = tempItems.map(item => ({
-        name: item.name,
-        percent: item.weight / totalRatioSum
-      }));
-
-      status.innerText = `DATABASE READY: ${imageData.length} categories loaded.`;
+      if (pool.length === 0) throw new Error("Data parsing failed.");
+      
+      weightedPool = pool;
+      status.innerText = "DATABASE: Sync Complete. Items ready for canvas.";
     } catch (err) {
       status.innerText = "Error: " + err.message;
     }
@@ -69,7 +72,7 @@
   loadData();
 
   document.addEventListener('mousedown', (e) => {
-    if (imageData.length === 0) return;
+    if (weightedPool.length === 0) return;
     isDragging = true;
     startX = e.clientX; startY = e.clientY;
     currentBox = document.createElement('div');
@@ -92,42 +95,32 @@
     currentBox.style.left = Math.min(currentX, startX) + 'px';
     currentBox.style.top = Math.min(e.clientY, startY) + 'px';
 
-    // 핵심: 드래그 길이에 따라 생성할 총 이미지 개수 결정 (예: 80px당 1개)
-    const totalCount = Math.floor(width / 80);
-    updateImages(currentBox.querySelector('.drag-content'), totalCount);
+    // 드래그 길이에 따라 생성할 총 이미지 개수 (60px당 1개로 촘촘하게 설정)
+    const totalCount = Math.floor(width / 60);
+    updateMixedImages(currentBox.querySelector('.drag-content'), totalCount);
   });
 
-  // 비율에 근사치하게 이미지를 채우는 함수
-  function updateImages(container, count) {
+  // 비율 풀에서 랜덤 추출하여 동적으로 이미지를 채우는 함수
+  function updateMixedImages(container, count) {
     if (count <= 0) {
       container.innerHTML = '';
       return;
     }
 
-    // 현재 이미 생성된 개수와 목표 개수가 같으면 업데이트 안 함 (성능 최적화)
+    // 현재 개수와 목표 개수가 같으면 업데이트 안 함 (성능)
     if (container.children.length === count) return;
 
     container.innerHTML = '';
     
-    // 각 항목별로 생성해야 할 개수 계산 (반올림하여 비율 근사치 맞춤)
-    let generatedCount = 0;
-    imageData.forEach((item, index) => {
-      let itemCount = Math.round(item.percent * count);
-      
-      // 마지막 항목에서 오차 보정
-      if (index === imageData.length - 1) {
-        itemCount = count - generatedCount;
-      }
-
-      for (let i = 0; i < itemCount; i++) {
-        if (generatedCount >= count) break;
-        const imgTag = document.createElement('img');
-        imgTag.src = baseFolder + item.name;
-        imgTag.onerror = function() { this.style.display = 'none'; };
-        container.appendChild(imgTag);
-        generatedCount++;
-      }
-    });
+    // 비율 풀에서 총 개수만큼 랜덤하게 뽑아서 나열
+    for (let i = 0; i < count; i++) {
+      const randomIndex = Math.floor(Math.random() * weightedPool.length);
+      const randomImgName = weightedPool[randomIndex];
+      const imgTag = document.createElement('img');
+      imgTag.src = baseFolder + randomImgName;
+      imgTag.onerror = function() { this.style.display = 'none'; };
+      container.appendChild(imgTag);
+    }
   }
 
   document.addEventListener('mouseup', () => { isDragging = false; currentBox = null; });
