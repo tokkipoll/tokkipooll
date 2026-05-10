@@ -10,13 +10,11 @@
   .drag-content { display: flex; align-items: center; gap: 12px; padding: 10px; width: max-content; height: 100%; box-sizing: border-box; }
   .drag-content img { height: 85%; width: auto; object-fit: contain; display: block; }
   #status-bar { position: fixed; bottom: 15px; left: 15px; font-family: monospace; font-size: 10px; color: #3b48ff; background: rgba(255,255,255,0.9); padding: 6px 10px; border: 1px solid #3b48ff; z-index: 100; }
-  .instruction { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; color: #f0f0f0; pointer-events: none; z-index: -1; font-size: 1rem; text-align: center; }
 </style>
 </head>
 <body>
 
-  <div id="status-bar">Connecting to New Database...</div>
-  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database v5</div>
+  <div id="status-bar">Syncing with A:Name, B:Ratio, C:Image...</div>
 
 <script>
   let isDragging = false;
@@ -24,72 +22,63 @@
   let currentBox = null;
   let weightedImagePool = []; 
 
-  // --- 새로운 시트 정보 적용 ---
-  const sheetId = '1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60';
-  const gid = '0'; // 수정하신 시트의 GID
+  const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
+  const gid = '0'; 
   const baseFolder = 'foldingpapers/assets/'; 
 
   async function loadData() {
     const status = document.getElementById('status-bar');
-    // 웹 게시 주소 (CSV 형식)
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&cache=${new Date().getTime()}`;
+    // 캐시 방지 및 CSV 출력 설정
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&t=${new Date().getTime()}`;
 
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Fetch Failed: 웹 게시 설정을 확인하세요.');
+      if (!response.ok) throw new Error('Fetch Blocked (Check Web Publish Settings)');
       const csvText = await response.text();
-      
       const rows = csvText.split(/\r?\n/);
-      if (rows.length < 2) throw new Error('시트가 비어있습니다.');
-
-      // 첫 줄에서 제목 위치 찾기 (image, ratio)
-      const header = rows[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
-      const imageIdx = header.indexOf('image'); // 'result' 대신 'image'로 찾음
-      const ratioIdx = header.indexOf('ratio');
-
-      if (imageIdx === -1 || ratioIdx === -1) {
-        throw new Error("'image' 또는 'ratio' 열 제목을 찾을 수 없습니다.");
-      }
-
+      
       let pool = [];
 
       for (let i = 1; i < rows.length; i++) {
+        // 쉼표로 분리 (따옴표 처리 포함)
         const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         
-        if (cols[imageIdx] && cols[ratioIdx]) {
-          const fileName = cols[imageIdx];
-          const ratioStr = cols[ratioIdx];
+        // A: Name(0), B: Ratio(1), C: Image(2)
+        if (cols.length >= 3) {
+          const ratioStr = cols[1]; // B열
+          const imageName = cols[2]; // C열
 
-          // 숫자 추출 (6:4 -> 6, 1:2.5 -> 1)
-          let count = 0;
+          // 비율 숫자 추출 (예: 6:4 -> 6)
+          let count = 1;
           const match = ratioStr.match(/^(\d+(\.\d+)?)/);
           if (match) {
-            count = Math.max(1, Math.round(parseFloat(match[1]) * 5));
+            count = Math.ceil(parseFloat(match[1]) * 5); // 가중치 적용
           }
 
-          if (fileName.toLowerCase().endsWith('.png') && count > 0) {
+          if (imageName && imageName.toLowerCase().endsWith('.png')) {
             for (let j = 0; j < count; j++) {
-              pool.push(fileName);
+              pool.push(imageName);
             }
           }
         }
       }
 
-      if (pool.length === 0) throw new Error('조건에 맞는 이미지가 없습니다.');
+      if (pool.length === 0) throw new Error("No valid data in columns A, B, C");
       
       weightedImagePool = pool;
-      status.innerText = `READY: ${pool.length} items sync success!`;
-      setTimeout(() => status.style.opacity = '0.3', 3000);
+      status.innerText = `SUCCESS: ${pool.length} items loaded from ABC structure.`;
+      status.style.color = "#3b48ff";
 
     } catch (err) {
       console.error(err);
-      status.innerText = `Error: ${err.message}`;
+      status.innerText = "Error: " + err.message;
       status.style.color = "red";
     }
   }
 
   loadData();
 
+  // 드래그 로직 (생략 없이 동일하게 유지)
   document.addEventListener('mousedown', (e) => {
     if (weightedImagePool.length === 0) return;
     isDragging = true;
@@ -98,11 +87,10 @@
     currentBox.className = 'drag-box';
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
-    
-    for (let i = 0; i < 20; i++) {
-      const imgName = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
+    for (let i = 0; i < 15; i++) {
+      const img = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
       const imgTag = document.createElement('img');
-      imgTag.src = baseFolder + imgName;
+      imgTag.src = baseFolder + img;
       imgTag.onerror = function() { this.style.display = 'none'; };
       contentWrapper.appendChild(imgTag);
     }
