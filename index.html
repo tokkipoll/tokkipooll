@@ -3,127 +3,196 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Exact Ratio & Mixed Canvas</title>
+<title>tokkipooll - Persistent Blueprint</title>
 <style>
-  body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
-  .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
-  .drag-content { display: flex; align-items: center; gap: 8px; padding: 5px; width: max-content; height: 100%; box-sizing: border-box; }
-  .drag-content img { height: 90%; width: auto; object-fit: contain; display: block; }
-  #status-bar { position: fixed; bottom: 15px; left: 15px; font-family: monospace; font-size: 10px; color: #3b48ff; z-index: 100; }
+  /* [기존 스타일 유지] */
+  body {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    background-color: #ffffff; 
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    overflow: hidden; user-select: none; cursor: crosshair; 
+    font-family: 'Pretendard', sans-serif;
+  }
+
+  .coord-tracker { position: fixed; top: 25px; right: 30px; font-size: 13px; color: #333; font-weight: 700; z-index: 50; }
+  .control-panel { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; z-index: 100; background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.7); border: 1px dashed #888; box-sizing: border-box; overflow: visible; z-index: 10; }
+  .drag-box.show-result { border: 1px solid #222; pointer-events: auto; background-color: rgba(255, 255, 255, 0.9); }
+  .dimension-label { position: absolute; bottom: -25px; right: -1px; font-size: 11px; font-weight: 600; color: white; background-color: #333; padding: 3px 6px; white-space: nowrap; }
+  .suggestion-content { width: 100%; height: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; padding: 10px; box-sizing: border-box; overflow: hidden; }
+  .matched-item { display: flex; flex-direction: column; align-items: center; max-width: 45%; max-height: 80%; cursor: pointer; transition: transform 0.2s; }
+  .matched-item:hover { transform: scale(1.1); }
+  .matched-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .matched-label { font-size: 11px; font-weight: 600; color: #555; margin-top: 5px; }
+
+  /* 모달 스타일 생략 (기존과 동일) */
+  .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #f5f5f5; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+  .modal.active { opacity: 1; pointer-events: auto; }
 </style>
 </head>
 <body>
 
-  <div id="status-bar">Synchronizing Data...</div>
+<div id="coordTracker" class="coord-tracker">X: 000 | Y: 000</div>
+
+<div class="control-panel">
+  <label for="toleranceSlider">TOLERANCE</label>
+  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.05" value="1.25">
+  <span id="tolValue" class="tol-value">25%</span>
+</div>
+
+<div id="detailModal" class="modal">
+  <div id="modalTimerBg" style="position:absolute; top:0; left:0; height:100%; width:100%; z-index:1;"></div>
+  <div id="modalMainContent" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+    <img id="modalImg" src="" style="width:200px; margin-bottom:20px;">
+    <h1 id="modalTitle" style="font-size:40px;"></h1>
+    <p id="modalPoint" style="max-width:500px; text-align:center;"></p>
+    <button id="homeBtn" style="margin-top:30px; cursor:pointer;">CLOSE</button>
+  </div>
+</div>
 
 <script>
-  let isDragging = false;
-  let startX, startY;
-  let currentBox = null;
-  let weightedPool = []; // 정밀하게 비율이 적용된 이미지 저장소
-
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
+  let sheetData = [];
 
-  async function loadData() {
-    const status = document.getElementById('status-bar');
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&t=${Date.now()}`;
-
+  // 1. 구글 시트 데이터 로드
+  async function loadSheetData() {
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = csvText.split('\n');
       
-      let pool = [];
-
-      for (let i = 1; i < rows.length; i++) {
-        const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+      sheetData = rows.slice(1).map(row => {
+        const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const imgFile = cols[2]; // C열: 파일명
-          const ratioVal = cols[4]; // E열: 비율 (예: 6:4)
-
-          // 정밀 숫자 추출 및 가중치 적용 (소수점 고려)
-          let weight = 0;
-          const match = ratioVal.match(/^(\d+(\.\d+)?)/);
-          if (match) {
-            // 소수점 둘째자리까지 고려하여 100을 곱함 (1:2.5 -> 250)
-            weight = Math.round(parseFloat(match[1]) * 100); 
-          }
-
-          if (imgFile && imgFile.toLowerCase().endsWith('.png') && weight > 0) {
-            // 비율(가중치)만큼 풀에 파일명을 중복해서 넣음
-            for (let j = 0; j < weight; j++) {
-              pool.push(imgFile);
-            }
-          }
+          const ratioVal = cols[4].match(/^(\d+(\.\d+)?)/);
+          const ratio = ratioVal ? parseFloat(ratioVal[1]) : 1;
+          return {
+            name: cols[0], // A: name
+            image: cols[2], // C: image (.png)
+            ratio: ratio,   // E: ratio
+            norm: ratio >= 1 ? ratio : 1/ratio,
+            point: cols[1] || "정보가 없습니다." // B: point (임시)
+          };
         }
-      }
-
-      if (pool.length === 0) throw new Error("Data parsing failed.");
-      
-      weightedPool = pool;
-      status.innerText = "DATABASE: Sync Complete. Items ready for canvas.";
-    } catch (err) {
-      status.innerText = "Error: " + err.message;
+        return null;
+      }).filter(d => d !== null);
+      console.log("Sheet Data Loaded:", sheetData);
+    } catch (e) {
+      console.error("Data Load Error:", e);
     }
   }
 
-  loadData();
+  loadSheetData();
 
-  document.addEventListener('mousedown', (e) => {
-    if (weightedPool.length === 0) return;
+  const slider = document.getElementById('toleranceSlider');
+  const tolText = document.getElementById('tolValue');
+  const coordTracker = document.getElementById('coordTracker');
+
+  let isDragging = false;
+  let startX, startY, currentBox, dimLabel;
+
+  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
+
+  document.onmousemove = (e) => {
+    coordTracker.textContent = `X: ${String(e.clientX).padStart(3, '0')} | Y: ${String(e.clientY).padStart(3, '0')}`;
+    if (!isDragging) return;
+    
+    let w = Math.abs(e.clientX - startX);
+    let h = Math.abs(e.clientY - startY);
+    currentBox.style.width = w + 'px';
+    currentBox.style.height = h + 'px';
+    currentBox.style.left = Math.min(e.clientX, startX) + 'px';
+    currentBox.style.top = Math.min(e.clientY, startY) + 'px';
+    
+    if (w > 0 && h > 0) {
+      const uRatio = Math.max(w, h) / Math.min(w, h);
+      dimLabel.textContent = `W:${w} H:${h} (1:${uRatio.toFixed(2)})`;
+    }
+  };
+
+  document.onmousedown = (e) => {
+    if (e.target.closest('.control-panel') || e.target.closest('.modal')) return;
+
+    // 2. 흔적 남기기: 이전 박스를 지우는 코드를 삭제함
     isDragging = true;
     startX = e.clientX; startY = e.clientY;
+    
     currentBox = document.createElement('div');
     currentBox.className = 'drag-box';
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'drag-content';
-    currentBox.appendChild(contentWrapper);
+    const content = document.createElement('div');
+    content.className = 'suggestion-content';
+    dimLabel = document.createElement('div');
+    dimLabel.className = 'dimension-label';
+    
+    currentBox.appendChild(content);
+    currentBox.appendChild(dimLabel);
+    currentBox.style.left = startX + 'px'; currentBox.style.top = startY + 'px';
     document.body.appendChild(currentBox);
-  });
+  };
 
-  document.addEventListener('mousemove', (e) => {
-    if (!isDragging || !currentBox) return;
-
-    const currentX = e.clientX;
-    const width = Math.abs(currentX - startX);
-    const height = Math.abs(e.clientY - startY);
+  document.onmouseup = () => {
+    if (!isDragging) return;
+    isDragging = false;
     
-    currentBox.style.width = width + 'px';
-    currentBox.style.height = height + 'px';
-    currentBox.style.left = Math.min(currentX, startX) + 'px';
-    currentBox.style.top = Math.min(e.clientY, startY) + 'px';
+    const w = parseInt(currentBox.style.width);
+    const h = parseInt(currentBox.style.height);
 
-    // 드래그 길이에 따라 생성할 총 이미지 개수 (60px당 1개로 촘촘하게 설정)
-    const totalCount = Math.floor(width / 60);
-    updateMixedImages(currentBox.querySelector('.drag-content'), totalCount);
-  });
+    if (w > 30 && h > 30) {
+      const uRatio = Math.max(w, h) / Math.min(w, h);
+      const currentTolerance = parseFloat(slider.value);
+      
+      // 시트 데이터와 매칭
+      let matchedItems = sheetData.filter(d => {
+        const diff = Math.max(uRatio / d.norm, d.norm / uRatio);
+        return diff <= currentTolerance;
+      }).sort((a, b) => {
+        const diffA = Math.max(uRatio / a.norm, a.norm / uRatio);
+        const diffB = Math.max(uRatio / b.norm, b.norm / uRatio);
+        return diffA - diffB;
+      });
 
-  // 비율 풀에서 랜덤 추출하여 동적으로 이미지를 채우는 함수
-  function updateMixedImages(container, count) {
-    if (count <= 0) {
-      container.innerHTML = '';
-      return;
+      if (matchedItems.length > 0) {
+        let imagesHTML = '';
+        matchedItems.slice(0, 2).forEach(item => { // 최대 2개까지만 표시
+          imagesHTML += `
+            <div class="matched-item" onclick="openDetail('${item.name}')">
+              <img src="${baseFolder}${item.image}" alt="${item.name}">
+              <span class="matched-label">${item.name}</span>
+            </div>
+          `;
+        });
+        currentBox.querySelector('.suggestion-content').innerHTML = imagesHTML;
+        currentBox.classList.add('show-result');
+        dimLabel.style.display = 'none';
+      } else {
+        currentBox.remove(); // 매칭되는 게 없으면 박스 삭제
+      }
+    } else {
+      currentBox.remove();
     }
+  };
 
-    // 현재 개수와 목표 개수가 같으면 업데이트 안 함 (성능)
-    if (container.children.length === count) return;
-
-    container.innerHTML = '';
+  // 상세 모달 열기
+  window.openDetail = (itemName) => {
+    const data = sheetData.find(d => d.name === itemName);
+    if (!data) return;
     
-    // 비율 풀에서 총 개수만큼 랜덤하게 뽑아서 나열
-    for (let i = 0; i < count; i++) {
-      const randomIndex = Math.floor(Math.random() * weightedPool.length);
-      const randomImgName = weightedPool[randomIndex];
-      const imgTag = document.createElement('img');
-      imgTag.src = baseFolder + randomImgName;
-      imgTag.onerror = function() { this.style.display = 'none'; };
-      container.appendChild(imgTag);
-    }
-  }
+    const modal = document.getElementById('detailModal');
+    document.getElementById('modalImg').src = baseFolder + data.image;
+    document.getElementById('modalTitle').textContent = data.name;
+    document.getElementById('modalPoint').textContent = data.point;
+    modal.classList.add('active');
+  };
 
-  document.addEventListener('mouseup', () => { isDragging = false; currentBox = null; });
+  document.getElementById('homeBtn').onclick = () => {
+    document.getElementById('detailModal').classList.remove('active');
+  };
 </script>
 </body>
 </html>
