@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Interactive Canvas</title>
+<title>tokkipooll - Interactive Database</title>
 <style>
   body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
   .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
@@ -15,8 +15,8 @@
 </head>
 <body>
 
-  <div id="status-bar">Smart Syncing...</div>
-  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database v4</div>
+  <div id="status-bar">Connecting to New Database...</div>
+  <div class="instruction">화면을 드래그하세요<br>Tokkipooll Database v5</div>
 
 <script>
   let isDragging = false;
@@ -24,52 +24,53 @@
   let currentBox = null;
   let weightedImagePool = []; 
 
-  const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
-  const gid = '59083326'; 
+  // --- 새로운 시트 정보 적용 ---
+  const sheetId = '1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60';
+  const gid = '0'; // 수정하신 시트의 GID
   const baseFolder = 'foldingpapers/assets/'; 
 
   async function loadData() {
     const status = document.getElementById('status-bar');
-    // 최신 데이터를 위해 캐시 무시 주소 사용
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&v=${Math.random()}`;
+    // 웹 게시 주소 (CSV 형식)
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&cache=${new Date().getTime()}`;
 
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error('Fetch Failed: 웹 게시 설정을 확인하세요.');
       const csvText = await response.text();
       
-      // 줄 단위로 나누기
       const rows = csvText.split(/\r?\n/);
       if (rows.length < 2) throw new Error('시트가 비어있습니다.');
 
-      // 첫 줄(헤더)에서 각 열의 위치 찾기
+      // 첫 줄에서 제목 위치 찾기 (image, ratio)
       const header = rows[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
-      const resultIdx = header.indexOf('result'); // C열 제목
-      const ratioIdx = header.indexOf('ratio');  // E열 제목
+      const imageIdx = header.indexOf('image'); // 'result' 대신 'image'로 찾음
+      const ratioIdx = header.indexOf('ratio');
 
-      if (resultIdx === -1 || ratioIdx === -1) {
-        throw new Error("'result'와 'ratio' 열 제목을 찾을 수 없습니다.");
+      if (imageIdx === -1 || ratioIdx === -1) {
+        throw new Error("'image' 또는 'ratio' 열 제목을 찾을 수 없습니다.");
       }
 
       let pool = [];
 
       for (let i = 1; i < rows.length; i++) {
-        // 따옴표를 고려한 쉼표 분리 (정밀 파싱)
-        const cols = rows[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-        if (!cols || !cols[resultIdx]) continue;
+        const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+        
+        if (cols[imageIdx] && cols[ratioIdx]) {
+          const fileName = cols[imageIdx];
+          const ratioStr = cols[ratioIdx];
 
-        const name = cols[resultIdx].replace(/"/g, '').trim();
-        const ratioStr = cols[ratioIdx].replace(/"/g, '').trim();
+          // 숫자 추출 (6:4 -> 6, 1:2.5 -> 1)
+          let count = 0;
+          const match = ratioStr.match(/^(\d+(\.\d+)?)/);
+          if (match) {
+            count = Math.max(1, Math.round(parseFloat(match[1]) * 5));
+          }
 
-        // 비율 추출 (6:4 -> 6, 1:2.5 -> 1)
-        let count = 0;
-        const match = ratioStr.match(/^(\d+(\.\d+)?)/);
-        if (match) {
-          count = Math.max(1, Math.round(parseFloat(match[1]) * 5)); // 최소 1개는 나오게 가중치 조절
-        }
-
-        if (name && name.toLowerCase().endsWith('.png') && count > 0) {
-          for (let j = 0; j < count; j++) {
-            pool.push(name);
+          if (fileName.toLowerCase().endsWith('.png') && count > 0) {
+            for (let j = 0; j < count; j++) {
+              pool.push(fileName);
+            }
           }
         }
       }
@@ -98,7 +99,6 @@
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
     
-    // 드래그 시 한 번에 보여줄 이미지 개수 (20개로 상향)
     for (let i = 0; i < 20; i++) {
       const imgName = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
       const imgTag = document.createElement('img');
