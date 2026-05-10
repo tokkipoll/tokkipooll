@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Perfect Ratio Match</title>
+<title>tokkipooll - Perfect Match</title>
 <style>
   body {
     margin: 0; padding: 0; width: 100vw; height: 100vh;
-    background-color: #ffffff; 
-    background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
-    background-size: 20px 20px;
-    overflow: hidden; user-select: none; cursor: crosshair; 
+    background-color: #ffffff; background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
+    background-size: 20px 20px; overflow: hidden; user-select: none; cursor: crosshair;
     font-family: 'Pretendard', sans-serif;
   }
   .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; }
@@ -20,13 +18,16 @@
     background: white; padding: 12px 30px; border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
   }
   .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
+  
+  /* 드래그 흔적 박스 스타일 */
   .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.5); border: 1px dashed #3b48ff; box-sizing: border-box; }
   .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  .dim-label { position: absolute; top: -20px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; }
-  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; overflow: hidden; }
+  
+  .dim-label { position: absolute; top: -18px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; white-space: nowrap; }
+  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 5px; box-sizing: border-box; overflow: hidden; }
   .item-card { display: flex; flex-direction: column; align-items: center; max-width: 95%; max-height: 95%; }
-  .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
-  .item-name { font-size: 10px; font-weight: 800; margin-top: 5px; color: #333; }
+  .item-card img { max-width: 100%; max-height: 75%; object-fit: contain; }
+  .item-name { font-size: 9px; font-weight: 800; margin-top: 4px; color: #333; text-align: center; }
 </style>
 </head>
 <body>
@@ -39,13 +40,12 @@
 </div>
 
 <script>
-  // 🌟 하민님의 최신 시트 정보 반영
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
   let database = [];
 
-  // 데이터 로드 및 비율 숫자 변환 함수
+  // 시트 데이터를 가져와서 비율을 숫자로 정밀 변환
   async function init() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     try {
@@ -56,10 +56,9 @@
       database = rows.map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const rawRatio = cols[4]; // E열의 비율 데이터
+          const rawRatio = cols[4]; // E열: ratio (예: "6:4")
           let val = 1;
 
-          // '6:4' 또는 '1:2.5' 형태에서 실제 비율 숫자를 계산
           if (rawRatio.includes(':')) {
             const parts = rawRatio.split(':');
             val = parseFloat(parts[0]) / parseFloat(parts[1]);
@@ -67,15 +66,15 @@
             val = parseFloat(rawRatio) || 1;
           }
           
-          // 비율 정규화 (항상 1보다 큰 값으로 변환하여 비교 용이하게 함)
+          // 가로/세로 구분 없이 '긴 쪽 / 짧은 쪽'으로 정규화 (항상 1 이상)
           const normRatio = val >= 1 ? val : 1 / val;
 
           return { name: cols[0], image: cols[2], ratio: normRatio };
         }
         return null;
       }).filter(d => d !== null);
-      console.log("Database Ready:", database);
-    } catch (e) { console.error("Data Load Error", e); }
+      console.log("매칭 시스템 준비 완료:", database);
+    } catch (e) { console.error("데이터 로드 실패", e); }
   }
 
   init();
@@ -110,6 +109,7 @@
     currentBox.style.height = h + 'px';
     currentBox.style.left = Math.min(e.clientX, startX) + 'px';
     currentBox.style.top = Math.min(e.clientY, startY) + 'px';
+    
     if (w > 0 && h > 0) {
       const r = Math.max(w, h) / Math.min(w, h);
       label.textContent = `1:${r.toFixed(2)}`;
@@ -123,11 +123,11 @@
     const w = parseInt(currentBox.style.width);
     const h = parseInt(currentBox.style.height);
 
-    if (w > 25 && h > 25) {
+    if (w > 30 && h > 30) {
       const userRatio = Math.max(w, h) / Math.min(w, h);
       const tol = parseFloat(slider.value);
 
-      // 🌟 핵심: 사용자 비율과 시트 비율의 '거리'가 가장 가까운 것 찾기
+      // 🌟 핵심: 사용자 비율과 시트 비율의 '오차'가 가장 적은 순으로 정렬
       const matched = database.filter(item => {
         const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
         return diff <= tol; 
@@ -139,12 +139,12 @@
 
       if (matched.length > 0) {
         currentBox.classList.add('active-result');
-        const bestMatch = matched[0]; // 가장 유사한 1등만 표시
+        const best = matched[0]; // 비율이 가장 잘 맞는 '딱 하나'만 표시
         currentBox.innerHTML = `
           <div class="content-wrapper">
             <div class="item-card">
-              <img src="${baseFolder}${bestMatch.image}" alt="${bestMatch.name}" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
-              <div class="item-name">${bestMatch.name}</div>
+              <img src="${baseFolder}${best.image}" alt="${best.name}">
+              <div class="item-name">${best.name}</div>
             </div>
           </div>
         `;
