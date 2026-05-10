@@ -3,53 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Persistent Blueprint</title>
+<title>tokkipooll - Ratio Archive</title>
 <style>
-  /* [기존 스타일 유지] */
   body {
     margin: 0; padding: 0; width: 100vw; height: 100vh;
     background-color: #ffffff; 
-    background-image: 
-      linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
     background-size: 20px 20px;
-    overflow: hidden; user-select: none; cursor: crosshair; 
+    overflow-y: auto; overflow-x: hidden; user-select: none; cursor: crosshair; 
     font-family: 'Pretendard', sans-serif;
   }
 
-  .coord-tracker { position: fixed; top: 25px; right: 30px; font-size: 13px; color: #333; font-weight: 700; z-index: 50; }
-  .control-panel { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; z-index: 100; background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.7); border: 1px dashed #888; box-sizing: border-box; overflow: visible; z-index: 10; }
-  .drag-box.show-result { border: 1px solid #222; pointer-events: auto; background-color: rgba(255, 255, 255, 0.9); }
-  .dimension-label { position: absolute; bottom: -25px; right: -1px; font-size: 11px; font-weight: 600; color: white; background-color: #333; padding: 3px 6px; white-space: nowrap; }
-  .suggestion-content { width: 100%; height: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; padding: 10px; box-sizing: border-box; overflow: hidden; }
-  .matched-item { display: flex; flex-direction: column; align-items: center; max-width: 45%; max-height: 80%; cursor: pointer; transition: transform 0.2s; }
-  .matched-item:hover { transform: scale(1.1); }
-  .matched-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
-  .matched-label { font-size: 11px; font-weight: 600; color: #555; margin-top: 5px; }
+  /* 상단 좌표 및 상태 표시 */
+  .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; letter-spacing: 1px; }
+  
+  /* 하단 컨트롤 패널 */
+  .control-panel { 
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
+    display: flex; align-items: center; gap: 20px; z-index: 1000; 
+    background: rgba(255, 255, 255, 0.9); padding: 12px 30px; border-radius: 40px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #f0f0f0; backdrop-filter: blur(10px);
+  }
+  .control-panel label { font-size: 11px; color: #aaa; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
+  
+  input[type="range"] { -webkit-appearance: none; width: 150px; height: 2px; background: #eee; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b48ff; border-radius: 50%; cursor: pointer; transition: 0.2s; }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-  /* 모달 스타일 생략 (기존과 동일) */
-  .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #f5f5f5; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
-  .modal.active { opacity: 1; pointer-events: auto; }
+  /* 드래그 흔적 박스 */
+  .drag-box { 
+    position: absolute; background-color: rgba(255, 255, 255, 0.05); 
+    border: 0.5px solid rgba(59, 72, 255, 0.2); box-sizing: border-box; overflow: visible; 
+  }
+  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+
+  .dim-label { 
+    position: absolute; top: -20px; left: 0; font-size: 9px; 
+    font-weight: 700; color: #3b48ff; white-space: nowrap; 
+  }
+
+  .content-wrapper { 
+    width: 100%; height: 100%; display: flex; flex-wrap: wrap; 
+    justify-content: center; align-items: center; gap: 10px; padding: 10px; box-sizing: border-box; overflow: hidden;
+  }
+
+  .item-card { 
+    display: flex; flex-direction: column; align-items: center; 
+    max-width: 90%; max-height: 90%; animation: fadeIn 0.4s ease-out;
+  }
+  .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
+  .item-name { font-size: 10px; font-weight: 800; color: #333; margin-top: 8px; text-transform: lowercase; letter-spacing: -0.5px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 2000; display: none; align-items: center; justify-content: center; }
+  .modal.active { display: flex; }
 </style>
 </head>
 <body>
 
-<div id="coordTracker" class="coord-tracker">X: 000 | Y: 000</div>
+<div id="coordTracker" class="coord-tracker">000 / 000</div>
 
 <div class="control-panel">
-  <label for="toleranceSlider">TOLERANCE</label>
-  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.05" value="1.25">
-  <span id="tolValue" class="tol-value">25%</span>
+  <label>Tolerance</label>
+  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.2">
+  <span id="tolValue" class="tol-value">20%</span>
 </div>
 
 <div id="detailModal" class="modal">
-  <div id="modalTimerBg" style="position:absolute; top:0; left:0; height:100%; width:100%; z-index:1;"></div>
-  <div id="modalMainContent" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-    <img id="modalImg" src="" style="width:200px; margin-bottom:20px;">
-    <h1 id="modalTitle" style="font-size:40px;"></h1>
-    <p id="modalPoint" style="max-width:500px; text-align:center;"></p>
-    <button id="homeBtn" style="margin-top:30px; cursor:pointer;">CLOSE</button>
+  <div style="text-align:center; padding:40px;">
+    <img id="modalImg" src="" style="max-width:300px; margin-bottom:30px;">
+    <h1 id="modalTitle" style="font-size:32px; letter-spacing:-1px;"></h1>
+    <p id="modalPoint" style="max-width:400px; font-size:14px; color:#666; line-height:1.7;"></p>
+    <button onclick="this.parentElement.parentElement.classList.remove('active')" style="margin-top:40px; padding:12px 30px; border:1px solid #333; background:none; font-weight:800; cursor:pointer;">CLOSE</button>
   </div>
 </div>
 
@@ -57,50 +84,65 @@
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
   const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
-  let sheetData = [];
+  let database = [];
 
-  // 1. 구글 시트 데이터 로드
-  async function loadSheetData() {
+  // 1. 데이터 로드: 시트의 비율을 정규화(항상 1보다 크게)해서 저장
+  async function init() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     try {
-      const response = await fetch(url);
-      const csvText = await response.text();
-      const rows = csvText.split('\n');
+      const res = await fetch(url);
+      const text = await res.text();
+      const rows = text.split('\n').slice(1);
       
-      sheetData = rows.slice(1).map(row => {
+      database = rows.map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const ratioVal = cols[4].match(/^(\d+(\.\d+)?)/);
-          const ratio = ratioVal ? parseFloat(ratioVal[1]) : 1;
-          return {
-            name: cols[0], // A: name
-            image: cols[2], // C: image (.png)
-            ratio: ratio,   // E: ratio
-            norm: ratio >= 1 ? ratio : 1/ratio,
-            point: cols[1] || "정보가 없습니다." // B: point (임시)
-          };
+          const rawRatio = cols[4]; // E열: ratio (6:4 등)
+          let val = 1;
+          const match = rawRatio.match(/^(\d+(\.\d+)?)/);
+          if (match) val = parseFloat(match[1]);
+          
+          // 가로세로 상관없이 비교하기 위해 '큰 값 / 작은 값'으로 정규화
+          const normRatio = val >= 1 ? val : 1 / val;
+
+          return { name: cols[0], image: cols[2], ratio: normRatio, point: cols[8] || "" };
         }
         return null;
       }).filter(d => d !== null);
-      console.log("Sheet Data Loaded:", sheetData);
-    } catch (e) {
-      console.error("Data Load Error:", e);
-    }
+      console.log("Database Loaded:", database);
+    } catch (e) { console.error("Load Error", e); }
   }
 
-  loadSheetData();
+  init();
 
   const slider = document.getElementById('toleranceSlider');
   const tolText = document.getElementById('tolValue');
-  const coordTracker = document.getElementById('coordTracker');
+  slider.oninput = (e) => {
+    let val = Math.round((parseFloat(e.target.value) - 1) * 100);
+    tolText.textContent = val + "%";
+  };
 
   let isDragging = false;
-  let startX, startY, currentBox, dimLabel;
+  let startX, startY, currentBox, label;
 
-  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
+  document.onmousedown = (e) => {
+    if (e.target.closest('.control-panel') || e.target.closest('.modal')) return;
+    isDragging = true;
+    startX = e.clientX; startY = e.clientY;
+    
+    currentBox = document.createElement('div');
+    currentBox.className = 'drag-box';
+    label = document.createElement('div');
+    label.className = 'dim-label';
+    
+    currentBox.appendChild(label);
+    currentBox.style.left = startX + 'px';
+    currentBox.style.top = startY + 'px';
+    document.body.appendChild(currentBox);
+  };
 
   document.onmousemove = (e) => {
-    coordTracker.textContent = `X: ${String(e.clientX).padStart(3, '0')} | Y: ${String(e.clientY).padStart(3, '0')}`;
+    document.getElementById('coordTracker').textContent = `${e.clientX} / ${e.clientY}`;
     if (!isDragging) return;
     
     let w = Math.abs(e.clientX - startX);
@@ -111,29 +153,9 @@
     currentBox.style.top = Math.min(e.clientY, startY) + 'px';
     
     if (w > 0 && h > 0) {
-      const uRatio = Math.max(w, h) / Math.min(w, h);
-      dimLabel.textContent = `W:${w} H:${h} (1:${uRatio.toFixed(2)})`;
+      const r = Math.max(w, h) / Math.min(w, h);
+      label.textContent = `Ratio 1:${r.toFixed(2)}`;
     }
-  };
-
-  document.onmousedown = (e) => {
-    if (e.target.closest('.control-panel') || e.target.closest('.modal')) return;
-
-    // 2. 흔적 남기기: 이전 박스를 지우는 코드를 삭제함
-    isDragging = true;
-    startX = e.clientX; startY = e.clientY;
-    
-    currentBox = document.createElement('div');
-    currentBox.className = 'drag-box';
-    const content = document.createElement('div');
-    content.className = 'suggestion-content';
-    dimLabel = document.createElement('div');
-    dimLabel.className = 'dimension-label';
-    
-    currentBox.appendChild(content);
-    currentBox.appendChild(dimLabel);
-    currentBox.style.left = startX + 'px'; currentBox.style.top = startY + 'px';
-    document.body.appendChild(currentBox);
   };
 
   document.onmouseup = () => {
@@ -143,56 +165,53 @@
     const w = parseInt(currentBox.style.width);
     const h = parseInt(currentBox.style.height);
 
-    if (w > 30 && h > 30) {
-      const uRatio = Math.max(w, h) / Math.min(w, h);
-      const currentTolerance = parseFloat(slider.value);
-      
-      // 시트 데이터와 매칭
-      let matchedItems = sheetData.filter(d => {
-        const diff = Math.max(uRatio / d.norm, d.norm / uRatio);
-        return diff <= currentTolerance;
+    if (w > 20 && h > 20) {
+      const userRatio = Math.max(w, h) / Math.min(w, h);
+      const tol = parseFloat(slider.value); // 1.0 ~ 2.0 (0% ~ 100%)
+
+      // 🌟 핵심 로직: 드래그 비율과 시트 비율의 차이가 오차범위(Tolerance) 내에 있는지 확인
+      const matched = database.filter(item => {
+        const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
+        return diff <= tol; // 1.2면 20% 오차까지 허용
       }).sort((a, b) => {
-        const diffA = Math.max(uRatio / a.norm, a.norm / uRatio);
-        const diffB = Math.max(uRatio / b.norm, b.norm / uRatio);
+        // 가장 닮은 순서대로 정렬
+        const diffA = Math.max(userRatio / a.ratio, a.ratio / userRatio);
+        const diffB = Math.max(userRatio / b.ratio, b.ratio / userRatio);
         return diffA - diffB;
       });
 
-      if (matchedItems.length > 0) {
-        let imagesHTML = '';
-        matchedItems.slice(0, 2).forEach(item => { // 최대 2개까지만 표시
-          imagesHTML += `
-            <div class="matched-item" onclick="openDetail('${item.name}')">
+      if (matched.length > 0) {
+        currentBox.classList.add('active-result');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'content-wrapper';
+        
+        // 가장 유사한 상위 항목들 표시 (공간에 따라 1~2개)
+        matched.slice(0, 1).forEach(item => {
+          wrapper.innerHTML = `
+            <div class="item-card" onclick="showDetail('${item.name}')">
               <img src="${baseFolder}${item.image}" alt="${item.name}">
-              <span class="matched-label">${item.name}</span>
+              <div class="item-name">${item.name}</div>
             </div>
           `;
         });
-        currentBox.querySelector('.suggestion-content').innerHTML = imagesHTML;
-        currentBox.classList.add('show-result');
-        dimLabel.style.display = 'none';
+        currentBox.appendChild(wrapper);
+        label.style.display = 'none';
       } else {
-        currentBox.remove(); // 매칭되는 게 없으면 박스 삭제
+        currentBox.remove(); // 맞는 게 없으면 흔적 삭제
       }
     } else {
       currentBox.remove();
     }
   };
 
-  // 상세 모달 열기
-  window.openDetail = (itemName) => {
-    const data = sheetData.find(d => d.name === itemName);
-    if (!data) return;
-    
-    const modal = document.getElementById('detailModal');
-    document.getElementById('modalImg').src = baseFolder + data.image;
-    document.getElementById('modalTitle').textContent = data.name;
-    document.getElementById('modalPoint').textContent = data.point;
-    modal.classList.add('active');
-  };
-
-  document.getElementById('homeBtn').onclick = () => {
-    document.getElementById('detailModal').classList.remove('active');
-  };
+  function showDetail(name) {
+    const item = database.find(d => d.name === name);
+    if (!item) return;
+    document.getElementById('modalImg').src = baseFolder + item.image;
+    document.getElementById('modalTitle').textContent = item.name;
+    document.getElementById('modalPoint').textContent = item.point;
+    document.getElementById('detailModal').classList.add('active');
+  }
 </script>
 </body>
 </html>
