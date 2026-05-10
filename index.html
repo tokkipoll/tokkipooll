@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Interactive Database</title>
+<title>tokkipooll - Interactive Canvas</title>
 <style>
   body { margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #ffffff; overflow: hidden; user-select: none; cursor: crosshair; }
   .drag-box { position: absolute; background-color: rgba(59, 72, 255, 0.02); border: 1px solid rgba(59, 72, 255, 0.15); overflow: hidden; pointer-events: none; display: flex; align-items: center; box-sizing: border-box; }
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-  <div id="status-bar">Syncing with A:Name, B:Ratio, C:Image...</div>
+  <div id="status-bar">Connecting to Fixed Columns...</div>
 
 <script>
   let isDragging = false;
@@ -23,54 +23,51 @@
   let weightedImagePool = []; 
 
   const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
-  const gid = '0'; 
+  const gid = '59083326'; 
   const baseFolder = 'foldingpapers/assets/'; 
 
   async function loadData() {
     const status = document.getElementById('status-bar');
-    // 캐시 방지 및 CSV 출력 설정
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?gid=${gid}&single=true&output=csv&t=${new Date().getTime()}`;
+    // 캐시를 완전히 무시하는 주소
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&t=${Date.now()}`;
 
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Fetch Blocked (Check Web Publish Settings)');
       const csvText = await response.text();
-      const rows = csvText.split(/\r?\n/);
+      const rows = csvText.split('\n');
       
       let pool = [];
 
       for (let i = 1; i < rows.length; i++) {
-        // 쉼표로 분리 (따옴표 처리 포함)
+        // 쉼표 분리
         const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         
-        // A: Name(0), B: Ratio(1), C: Image(2)
-        if (cols.length >= 3) {
-          const ratioStr = cols[1]; // B열
-          const imageName = cols[2]; // C열
+        // --- 하민님의 시트 구조 고정 ---
+        // cols[2] -> C열 (이미지 파일명)
+        // cols[4] -> E열 (비율 숫자)
+        if (cols.length >= 5) {
+          const imgFile = cols[2];
+          const ratioVal = cols[4];
 
-          // 비율 숫자 추출 (예: 6:4 -> 6)
           let count = 1;
-          const match = ratioStr.match(/^(\d+(\.\d+)?)/);
-          if (match) {
-            count = Math.ceil(parseFloat(match[1]) * 5); // 가중치 적용
+          const numMatch = ratioVal.match(/^(\d+(\.\d+)?)/);
+          if (numMatch) {
+            count = Math.max(1, Math.round(parseFloat(numMatch[1]) * 5));
           }
 
-          if (imageName && imageName.toLowerCase().endsWith('.png')) {
+          if (imgFile && imgFile.toLowerCase().endsWith('.png')) {
             for (let j = 0; j < count; j++) {
-              pool.push(imageName);
+              pool.push(imgFile);
             }
           }
         }
       }
 
-      if (pool.length === 0) throw new Error("No valid data in columns A, B, C");
+      if (pool.length === 0) throw new Error("C열에서 .png 파일을 찾지 못했습니다.");
       
       weightedImagePool = pool;
-      status.innerText = `SUCCESS: ${pool.length} items loaded from ABC structure.`;
-      status.style.color = "#3b48ff";
-
+      status.innerText = `READY: ${pool.length} images synced. Try dragging!`;
     } catch (err) {
-      console.error(err);
       status.innerText = "Error: " + err.message;
       status.style.color = "red";
     }
@@ -78,7 +75,6 @@
 
   loadData();
 
-  // 드래그 로직 (생략 없이 동일하게 유지)
   document.addEventListener('mousedown', (e) => {
     if (weightedImagePool.length === 0) return;
     isDragging = true;
@@ -87,6 +83,7 @@
     currentBox.className = 'drag-box';
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'drag-content';
+    
     for (let i = 0; i < 15; i++) {
       const img = weightedImagePool[Math.floor(Math.random() * weightedImagePool.length)];
       const imgTag = document.createElement('img');
