@@ -2,16 +2,18 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Data Fix</title>
+<title>Origami Archive - Final Polish</title>
 <style>
-    /* --- 디자인 스타일 유지 --- */
+    /* --- 기초 디자인: 미니멀 & 직각 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     body { background: #fdfdfd; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
+    /* 드래그 가이드 */
     #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-22px; left:0; background:#00ff00; color:#000; font-size:10px; font-weight:bold; padding:2px 6px; }
 
+    /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { height: 18px; border-bottom: 1px solid #000; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 8px; background: #fafafa; }
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 10px; gap: 15px; align-items: center; }
@@ -21,26 +23,30 @@
     .result-img { height: calc(100% - 15px); width: auto; object-fit: contain; border: 0.5px solid #eee; }
     .item-name { font-size: 8px; margin-top: 5px; color: #888; text-transform: uppercase; }
 
+    /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 60vw; max-height: 60vh; opacity: 0.15; z-index: -1; filter: grayscale(1); object-fit: contain; pointer-events: none; }
     
     #detailName { font-size: 28px; font-weight: normal; margin-bottom: 30px; text-decoration: underline; letter-spacing: 2px; cursor: pointer; transition: color 0.2s; z-index: 10; }
     #detailName:hover { color: #00ff00; }
 
+    /* [수정] 텍스트가 넘치지 않도록 설정된 포인트 박스 */
     #detailPointBox { 
-        border: 1px solid #000; padding: 40px; 
+        border: 1px solid #000; 
+        padding: 40px; 
         display: flex; align-items: center; justify-content: center; 
         text-align: center; font-size: 14px; line-height: 1.8; 
         background: rgba(255, 255, 255, 0.8); 
         transition: width 0.5s, height 0.5s; 
-        overflow-y: auto; 
-        min-width: 320px; min-height: 200px;
-        max-width: 85vw; max-height: 65vh;
+        overflow-y: auto; /* 내용이 너무 많으면 스크롤 생성 */
+        min-width: 300px; min-height: 200px; /* 최소 크기 보장 */
+        max-width: 80vw; max-height: 60vh; /* 최대 크기 제한 */
     }
 
     #detailMeta { margin-top: 30px; font-size: 11px; color: #000; letter-spacing: 3px; text-transform: uppercase; text-align: center; }
     #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #000; z-index: 100; }
 
+    /* 조작 패널 */
     #panel { position:fixed; left:30px; bottom:30px; width:220px; background:#fff; padding:25px; border:1px solid #000; z-index:3000; }
     #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
     .lang-switcher { position: absolute; top: 25px; right: 25px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #000; padding-bottom: 2px; }
@@ -90,27 +96,14 @@ let db = [];
 let isDown = false;
 let startX, startY;
 
-// [핵심] CSV의 쉼표 문제를 해결하는 정교한 파싱 함수
-function parseCSV(text) {
-    const rows = [];
-    const lines = text.split(/\r?\n/);
-    lines.forEach(line => {
-        // 큰따옴표 안의 쉼표는 무시하고 나누는 정규표현식
-        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-        if (matches) {
-            rows.push(matches.map(val => val.replace(/^"|"$/g, "").trim()));
-        }
-    });
-    return rows;
-}
-
 async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        const rows = parseCSV(csvText); // 보강된 파서 사용
+        const rows = csvText.split(/\r?\n/).map(row => row.split(',').map(cell => cell.trim()));
         const headers = rows[0].map(h => h.toLowerCase());
         
+        // [중요] 헤더 이름을 기반으로 정확한 인덱스 찾기
         const idx = {
             name: headers.indexOf('name'),
             name_en: headers.indexOf('name_en'),
@@ -233,30 +226,37 @@ function refreshDetailContent() {
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
     document.getElementById("detailPointBox").innerText = point;
 
-    // 박스 크기 계산
+    // [수정] 박스 크기 계산 로직 개선 (글자가 넘치지 않도록 여유분 확보)
     const baseSize = 400;
     const r = item.ratio || 1;
     let targetW, targetH;
-    if (r >= 1) { targetW = baseSize; targetH = baseSize / r; } 
-    else { targetH = baseSize; targetW = baseSize * r; }
+
+    if (r >= 1) {
+        targetW = baseSize;
+        targetH = baseSize / r;
+    } else {
+        targetH = baseSize;
+        targetW = baseSize * r;
+    }
     
-    document.getElementById("detailPointBox").style.width = Math.max(targetW, 320) + "px";
+    // 최소 높이/너비 보정 (텍스트 가독성)
+    document.getElementById("detailPointBox").style.width = Math.max(targetW, 300) + "px";
     document.getElementById("detailPointBox").style.height = Math.max(targetH, 200) + "px";
 
-    // 시간과 레벨 정확히 매칭
-    const timeText = (item.time || "0 MIN").toUpperCase();
-    const levelText = (item.level || "LEV.1").toUpperCase();
+    // [수정] 시간과 레벨 데이터 반영
+    const timeText = item.time ? item.time : "0 MIN";
+    const levelText = item.level ? item.level : "LEV.1";
     
-    let displayTime = timeText;
-    let displayLevel = levelText;
-
+    // 영어 모드일 때 "분" -> "MIN" 등으로 변환 로직 (선택 사항)
+    let displayTime = timeText.toUpperCase();
+    let displayLevel = levelText.toUpperCase();
     if(currentLang === 'EN') {
         displayTime = displayTime.replace("분", " MIN");
         displayLevel = displayLevel.replace("보통", "NORMAL").replace("쉬움", "EASY").replace("어려움", "HARD");
     }
 
     document.getElementById("detailTime").innerText = displayTime;
-    document.getElementById("detailLevel").innerText = displayLevel.includes('LEV') ? displayLevel : `LEV.${displayLevel}`;
+    document.getElementById("detailLevel").innerText = displayLevel.startsWith('LEV') ? displayLevel : `LEV.${displayLevel}`;
 }
 
 function goToLink() {
