@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Ratio Search - Kitsch Minimal</title>
+<title>Origami Archive - Poetic Kitsch Final</title>
 <style>
-    /* --- 교수님이 좋아하신 키치 & 미니멀 디자인 유지 --- */
+    /* --- 기초 디자인: 미니멀 & 직각 --- */
     * { 
         margin:0; padding:0; box-sizing:border-box; 
         border-radius: 0 !important; 
@@ -18,49 +18,75 @@
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 박스: 키치한 형광 그린 포인트 */
+    /* 드래그 박스: 네온 그린 (키치 포인트) */
     #dragBox { 
         position:absolute; 
         border:1px solid #00ff00; 
         background: rgba(0, 255, 0, 0.02);
-        display:none; pointer-events:none; z-index:100; 
+        display:none; pointer-events:none; z-index:1000; 
     }
-    
     #ratioTag { 
         position:absolute; top:-22px; left:0; 
         background:#00ff00; color:#000; 
         font-size:10px; font-weight:bold; padding:2px 6px; 
     }
 
-    /* 결과 박스 (흔적): 수직 수평의 완벽한 미니멀리즘 */
+    /* 결과 박스: 투명한 프레임 역할 */
     .traceBox { 
         position:absolute; 
         border:1px solid rgba(0,0,0,0.1); 
-        background: #fff;
-        overflow-y: auto; display: flex; flex-wrap: wrap; 
-        padding: 15px; gap: 15px; z-index: 50;
+        background: transparent;
+        z-index: 50;
+        overflow: visible; /* 아이템이 박스 밖으로 살짝 나가도 됨 */
     }
 
-    /* 이미지 배치 */
-    .traceBox img { 
-        width: 70px; height: 70px; object-fit: contain; cursor: pointer;
-        border: 1px solid #f0f0f0;
+    /* 항목 레이아웃: 크기를 키우고 겹침 허용 */
+    .result-item {
+        position: absolute;
+        background: #fff;
+        border: 1px solid #000;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         transition: transform 0.2s;
+        cursor: pointer;
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
     }
-    .traceBox img:hover { 
+    .result-item:hover {
+        z-index: 100;
+        border-color: #00ff00;
         transform: scale(1.05);
-        border-color: #00ff00; 
+    }
+
+    .result-img {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    .result-info {
+        width: 100%;
+        margin-top: 6px;
+        font-size: 9px;
+        line-height: 1.2;
+        color: #000;
+        border-top: 0.5px solid #eee;
+        padding-top: 4px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     /* 상세 화면 (모달) */
     #detailView {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: #fff; display: none; z-index: 1000;
+        background: #fff; display: none; z-index: 2000;
         flex-direction: column; align-items: center; justify-content: center;
         cursor: pointer; padding: 40px;
     }
     #detailBgImg {
-        position: absolute; width: 300px; opacity: 0.1; z-index: -1;
+        position: absolute; width: 400px; opacity: 0.1; z-index: -1;
         filter: grayscale(1);
     }
     #detailPointBox {
@@ -71,22 +97,15 @@
     #detailName { font-size: 24px; font-weight: normal; margin-bottom: 15px; text-decoration: underline; }
     #detailMeta { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
 
-    /* 조작 패널 */
+    /* 패널 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:220px; 
-        background:#fff; padding:25px; border:1px solid #000; z-index:200; 
+        background:#fff; padding:25px; border:1px solid #000; z-index:2000; 
     }
     #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
     #status { font-size:9px; margin-bottom:15px; color: #888; }
-    
-    #tol { 
-        width:100%; margin:15px 0; -webkit-appearance:none; 
-        background:#000; height:1px; 
-    }
-    #tol::-webkit-slider-thumb { 
-        -webkit-appearance:none; width:12px; height:12px; 
-        background:#00ff00; border:1px solid #000; cursor:pointer; 
-    }
+    #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -105,14 +124,13 @@
 </div>
 
 <div id="panel">
-    <h1>Archive.zip</h1>
+    <h1>Archive.v2</h1>
     <div id="status">CONNECTING...</div>
     <label style="font-size: 10px;">TOLERANCE: <span id="tolText">50%</span></label>
     <input type="range" min="1" max="100" value="50" id="tol">
 </div>
 
 <script>
-/* 데이터 로드 및 오류 방지를 위한 핵심 로직 수정 */
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const ASSET_PATH = "foldingpapers/assets/"; 
@@ -125,12 +143,8 @@ async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        
-        // CSV 줄바꿈 및 데이터 파싱 정밀화
         const lines = csvText.split("\n");
         const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-        
-        // 열 인덱스를 더 확실하게 찾음
         const idx = {
             name: headers.findIndex(h => h.includes('name')),
             image: headers.findIndex(h => h.includes('image')),
@@ -139,18 +153,14 @@ async function init() {
             level: headers.findIndex(h => h.includes('level')),
             time: headers.findIndex(h => h.includes('time'))
         };
-
         db = lines.slice(1).map(line => {
             const col = line.split(",");
             let rRaw = col[idx.ratio];
             let rVal = parseFloat(rRaw);
-            
-            // 시트의 ratio 형식이 "1:2"일 경우 대응
             if (rRaw && rRaw.includes(':')) {
                 const parts = rRaw.split(':');
                 rVal = parseFloat(parts[parts.length - 1]) / parseFloat(parts[0] || 1);
             }
-
             return {
                 name: col[idx.name] || "Unnamed",
                 image: col[idx.image] ? col[idx.image].trim() : "",
@@ -160,12 +170,8 @@ async function init() {
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
             };
         }).filter(item => !isNaN(item.normRatio) && item.image !== "");
-
         document.getElementById("status").innerHTML = `INDEXED: ${db.length} ITEMS`;
-    } catch (e) { 
-        document.getElementById("status").innerHTML = `FAILED TO CONNECT`; 
-        console.error(e);
-    }
+    } catch (e) { document.getElementById("status").innerHTML = `FAILED TO CONNECT`; }
 }
 init();
 
@@ -204,24 +210,32 @@ function createResultBox(x, y, w, h, userRatio) {
     stage.appendChild(box);
 
     const tVal = Number(document.getElementById("tol").value) / 100;
-    
-    // 비율 검색 로직
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
 
     if (results.length > 0) {
-        results.forEach(item => {
-            const img = document.createElement("img");
-            img.src = ASSET_PATH + item.image;
-            img.onclick = (e) => { 
-                e.stopPropagation(); 
-                showDetail(item); 
-            };
-            // 이미지 로드 실패 시 콘솔 표시 (디버깅용)
-            img.onerror = () => console.log("Image not found: " + img.src);
-            img.onload = () => box.appendChild(img);
+        // 최대 3개까지만 크게 보여줌 (겹치기 효과를 위해)
+        results.slice(0, 3).forEach((item, i) => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "result-item";
+            
+            // 레이아웃 지그재그 배치 (키치한 재미)
+            const itemSize = Math.min(w, h) * 0.7; // 상자의 70% 크기로 과감하게 키움
+            const offset = i * 25; // 25px씩 어긋나게 배치
+            
+            Object.assign(itemDiv.style, {
+                width: itemSize + "px",
+                left: offset + "px",
+                top: offset + "px"
+            });
+
+            itemDiv.innerHTML = `
+                <img src="${ASSET_PATH + item.image}" class="result-img">
+                <div class="result-info">${item.name} / ${item.time}</div>
+            `;
+            
+            itemDiv.onclick = (e) => { e.stopPropagation(); showDetail(item); };
+            box.appendChild(itemDiv);
         });
-    } else {
-        box.innerHTML = `<span style="font-size:9px; color:#ccc;">NO MATCH</span>`;
     }
 }
 
@@ -236,9 +250,8 @@ function showDetail(item) {
 }
 
 document.getElementById("detailView").onclick = function() { this.style.display = "none"; };
-
 window.addEventListener("keydown", (e) => {
-    if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
+    if(e.code === "Space") document.querySelectorAll(".traceBox, .result-item").forEach(el => el.remove());
 });
 </script>
 </body>
