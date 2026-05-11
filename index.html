@@ -2,10 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Specimen Multi-Archive</title>
+<title>Origami Archive - Ratio Analysis</title>
 <style>
     /* --- 기초 디자인: 미니멀 & 직각 --- */
-    * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
+    * { 
+        margin:0; padding:0; box-sizing:border-box; 
+        border-radius: 0 !important; 
+    }
     
     body { 
         background: #fdfdfd; 
@@ -15,7 +18,7 @@
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 가이드 */
+    /* 드래그 박스: 네온 그린 가이드라인 */
     #dragBox { 
         position:absolute; 
         border:1px solid #00ff00; 
@@ -28,112 +31,111 @@
         font-size:10px; font-weight:bold; padding:2px 6px; 
     }
 
-    /* 결과 박스: 여러 항목을 담는 가로형 아카이브 */
+    /* 결과 박스: 순수 미니멀리즘 직각 유지 */
     .traceBox { 
         position:absolute; 
         border:1px solid #000; 
-        background: #fff;
-        z-index: 50;
+        background: #fff; 
+        overflow: hidden; 
         display: flex;
         flex-direction: column;
+        z-index: 50;
     }
 
-    /* 상단 정보바: 키치한 데이터 표시 */
-    .box-header {
-        height: 20px; border-bottom: 1px solid #000;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0 8px; font-size: 8px; background: #fafafa;
-    }
-
-    /* 이미지 리스트: 가로 스크롤 (여러 항목 노출 핵심) */
-    .image-list {
-        flex: 1;
-        display: flex;
-        overflow-x: auto; /* 가로 스크롤 허용 */
-        overflow-y: hidden;
-        scroll-snap-type: x mandatory;
-        gap: 0;
-    }
-    /* 스크롤바 숨기기 */
-    .image-list::-webkit-scrollbar { display: none; }
-
-    .item-wrapper {
-        flex: 0 0 100%; /* 상자 너비를 가득 채우며 하나씩 보임 */
-        height: 100%;
-        scroll-snap-align: start;
-        position: relative;
-        cursor: pointer;
-        border-right: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .result-img {
-        width: 100%; height: 100%;
-        object-fit: cover; /* 비율에 맞춰 꽉 채움 */
-        filter: grayscale(0.5); transition: 0.3s;
-    }
-    .item-wrapper:hover .result-img { filter: grayscale(0); }
-
-    /* 이미지 위 캡션 */
-    .img-caption {
-        position: absolute; bottom: 5px; left: 5px;
-        background: #00ff00; color: #000;
-        font-size: 8px; padding: 2px 4px; font-weight: bold;
-    }
-
-    /* 하단 라벨 */
-    .result-label {
-        height: 25px; border-top: 1px solid #000;
-        display: flex; align-items: center; padding: 0 8px;
-        font-size: 8px; gap: 10px;
-    }
-
-    /* 상세 화면 */
+    /* 상세 화면 (모달) */
     #detailView {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #fff; display: none; z-index: 2000;
         flex-direction: column; align-items: center; justify-content: center;
-        padding: 60px; cursor: pointer;
+        cursor: pointer; padding: 40px;
     }
-    #detailName { font-size: 24px; letter-spacing: 8px; margin-bottom: 20px; text-decoration: underline; }
+    #detailBgImg {
+        position: absolute; width: 300px; opacity: 0.1; z-index: -1;
+        filter: grayscale(1);
+    }
     #detailPointBox {
-        border-top: 1px solid #000; border-bottom: 1px solid #000;
-        padding: 40px 20px; width: 100%; max-width: 500px;
-        text-align: center; font-size: 14px; line-height: 1.8;
+        border: 1px solid #000; padding: 40px; max-width: 500px;
+        text-align: left; font-size: 14px; line-height: 1.8;
+        margin-bottom: 40px; background: #fff;
     }
-    #detailMeta { font-size: 10px; margin-top: 20px; color: #888; }
+    #detailName { font-size: 24px; font-weight: normal; margin-bottom: 15px; text-decoration: underline; }
+    #detailMeta { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
 
-    /* 패널 */
+    /* 조작 패널 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:220px; 
-        background:#fff; padding:20px; border:1px solid #000; z-index:2000; 
+        background:#fff; padding:25px; border:1px solid #000; z-index:2000; 
     }
-    #panel h1 { font-size:12px; margin-bottom:10px; border-bottom: 1px solid #000; }
-    #status { font-size:9px; color: #aaa; margin-bottom: 10px; }
-    #tol { width:100%; margin:5px 0; -webkit-appearance:none; background:#000; height:1px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; background:#00ff00; border:1px solid #000; cursor:pointer; }
+    #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
+    #status { font-size:9px; margin-bottom:15px; color: #888; }
+    #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
+
+    /* --- [핵심 수정] 결과 아이템 레이아웃 --- */
+    .result-item {
+        position: relative;
+        width: 100%; height: 100%;
+        display: flex;
+        justify-content: center; 
+        align-items: center;
+        background: #fff; 
+        cursor: pointer;
+    }
+
+    /* 이미지가 절대 잘리지 않도록 contain 설정 */
+    .result-img {
+        width: 100%; height: 100%;
+        object-fit: contain; /* [핵심] 원본 비율 유지, 잘림 방지 */
+        transition: transform 0.2s;
+        z-index: 2;
+    }
+
+    /* 이미지가 차지하지 않는 여백(Letterbox) 공간을 위한 디자인 요소 */
+    .result-item::before {
+        content: "";
+        position: absolute;
+        top: 10%; left: 10%; right: 10%; bottom: 10%;
+        border: 0.5px dashed rgba(0, 255, 0, 0.3); /* 포에틱한 점선 가이드 */
+        z-index: 1;
+    }
+
+    /* 여백 공간에 배치되는 시각 데이터 */
+    .result-data {
+        position: absolute;
+        font-size: 9px;
+        font-weight: bold;
+        color: #000;
+        z-index: 3;
+    }
+    .data-ratio { top: 8px; left: 8px; color: #00ff00; background: #000; padding: 2px 4px; }
+    .data-name { bottom: 8px; right: 8px; border-bottom: 1px solid #00ff00; }
+
 </style>
 </head>
 <body>
 
 <div id="stage">
-    <div id="dragBox"><div id="ratioTag">0.00</div></div>
+    <div id="dragBox"><div id="ratioTag">1:1.00</div></div>
 </div>
 
 <div id="detailView">
-    <div id="detailName">NAME</div>
-    <div id="detailPointBox">POINT TEXT</div>
-    <div id="detailMeta">TIME / LEVEL</div>
+    <img id="detailBgImg" src="">
+    <div id="detailPointBox"></div>
+    <div id="detailName"></div>
+    <div id="detailMeta">
+        <span id="detailTime"></span> • <span id="detailLevel"></span>
+    </div>
 </div>
 
 <div id="panel">
-    <h1>Multi_Specimen.v3</h1>
-    <div id="status">Scanning Ratio...</div>
-    <input type="range" min="1" max="100" value="50" id="tol">
+    <h1>Ratio Archive v2.1</h1>
+    <div id="status">CONNECTING...</div>
+    <label style="font-size: 10px;">TOLERANCE: <span id="tolText">30%</span></label>
+    <input type="range" min="1" max="100" value="30" id="tol">
 </div>
 
 <script>
-const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+const SHEET_URL = "https://opensheet.elk.sh/1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60/Sheet1";
 const ASSET_PATH = "foldingpapers/assets/"; 
 
 let db = [];
@@ -142,47 +144,37 @@ let startX, startY;
 
 async function init() {
     try {
-        const response = await fetch(CSV_URL);
-        const csvText = await response.text();
-        const rows = csvText.split('\n').map(row => row.split(','));
-        const headers = rows[0].map(h => h.trim().toLowerCase());
-        const idx = {
-            name: headers.findIndex(h => h.includes('name')),
-            image: headers.findIndex(h => h.includes('image')),
-            ratio: headers.findIndex(h => h.includes('ratio')),
-            point: headers.findIndex(h => h.includes('point')),
-            level: headers.findIndex(h => h.includes('level')),
-            time: headers.findIndex(h => h.includes('time'))
-        };
-        db = rows.slice(1).map(row => {
-            let rRaw = row[idx.ratio];
+        const response = await fetch(SHEET_URL);
+        const data = await response.json();
+        
+        db = data.map(item => {
+            let rRaw = item.ratio;
             let rVal = parseFloat(rRaw);
-            if (rRaw && rRaw.includes(':')) {
-                const p = rRaw.split(':');
-                rVal = parseFloat(p[p.length-1]) / parseFloat(p[0]);
-            }
             return {
-                name: row[idx.name] || "NoName",
-                image: row[idx.image] ? row[idx.image].trim() : "",
-                point: row[idx.point] || "",
-                level: row[idx.level] || "",
-                time: row[idx.time] || "",
+                name: item.name, 
+                image: item.image ? item.image.trim() : "",
+                point: item.point, 
+                level: item.level, 
+                time: item.time,
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
             };
-        }).filter(item => item.image !== "");
-        document.getElementById("status").innerHTML = `Database: ${db.length}`;
-    } catch (e) { document.getElementById("status").innerHTML = `Link Error`; }
+        }).filter(item => !isNaN(item.normRatio));
+        document.getElementById("status").innerHTML = `CONNECT: ${db.length} ITEMS`;
+    } catch (e) { document.getElementById("status").innerHTML = `ERROR`; }
 }
 init();
 
 const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
 
+document.getElementById("tol").addEventListener("input", (e) => { 
+    document.getElementById("tolText").innerText = e.target.value + "%"; 
+});
+
 stage.addEventListener("mousedown", (e) => {
     isDown = true; startX = e.clientX; startY = e.clientY;
     dragBox.style.display = "block";
 });
-
 stage.addEventListener("mousemove", (e) => {
     if(!isDown) return;
     const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
@@ -191,11 +183,10 @@ stage.addEventListener("mousemove", (e) => {
     const currentR = w > h ? (w/h) : (h/w);
     document.getElementById("ratioTag").innerHTML = `1:${currentR.toFixed(2)}`;
 });
-
 stage.addEventListener("mouseup", (e) => {
     if(!isDown) return; isDown = false; dragBox.style.display = "none";
     const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    if(w < 30 || h < 30) return;
+    if(w < 20 || h < 20) return;
     createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
 });
 
@@ -205,40 +196,32 @@ function createResultBox(x, y, w, h, userRatio) {
     Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
     stage.appendChild(box);
 
-    const tolerance = Number(document.getElementById("tol").value) / 100;
-    const results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tolerance));
+    const tVal = Number(document.getElementById("tol").value) / 100;
+    let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
 
     if (results.length > 0) {
-        let itemsHTML = results.map((item, i) => `
-            <div class="item-wrapper" onclick="showDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
-                <img src="${ASSET_PATH + item.image}" class="result-img">
-                <div class="img-caption">${i+1}/${results.length}</div>
-            </div>
-        `).join('');
-
-        box.innerHTML = `
-            <div class="box-header">
-                <span>RATIO_MATCH: 1:${userRatio.toFixed(1)}</span>
-                <span>COUNT: ${results.length}</span>
-            </div>
-            <div class="image-list">${itemsHTML}</div>
-            <div class="result-label">
-                <span>SCROLL TO BROWSE</span>
-                <span style="color:#00ff00">● ANALYZED</span>
-            </div>
+        const item = results[0];
+        const wrapper = document.createElement("div");
+        wrapper.className = "result-item";
+        wrapper.onclick = (e) => { e.stopPropagation(); showDetail(item); };
+        
+        wrapper.innerHTML = `
+            <div class="result-data data-ratio">R: 1:${userRatio.toFixed(1)}</div>
+            <img src="${ASSET_PATH + item.image}" class="result-img">
+            <div class="result-data data-name">${item.name}</div>
         `;
-    } else {
-        box.innerHTML = `<div style="flex:1; display:flex; align-items:center; justify-content:center; font-size:10px; color:#ccc;">NO DATA</div>`;
+        box.appendChild(wrapper);
     }
 }
 
-function showDetail(encoded) {
-    const item = JSON.parse(decodeURIComponent(atob(encoded)));
-    const view = document.getElementById("detailView");
+function showDetail(item) {
+    const detailView = document.getElementById("detailView");
+    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
+    document.getElementById("detailPointBox").innerText = item.point || "No description.";
     document.getElementById("detailName").innerText = item.name;
-    document.getElementById("detailPointBox").innerText = item.point;
-    document.getElementById("detailMeta").innerText = `${item.time} / LV.${item.level}`;
-    view.style.display = "flex";
+    document.getElementById("detailTime").innerText = item.time;
+    document.getElementById("detailLevel").innerText = "LEV." + item.level;
+    detailView.style.display = "flex";
 }
 
 document.getElementById("detailView").onclick = function() { this.style.display = "none"; };
