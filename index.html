@@ -3,233 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Detailed Archive</title>
+<title>tokkipooll Final System</title>
 <style>
-  /* 🌟 기본 캔버스 스타일 */
-  body {
-    margin: 0; padding: 0; width: 100vw; height: 100vh;
-    background-color: #ffadad; 
-    background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
-    background-size: 20px 20px;
-    overflow: hidden; user-select: none; cursor: crosshair; 
-    font-family: 'Pretendard', sans-serif;
-  }
-
-  .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; }
-  
-  .control-panel { 
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-    display: flex; align-items: center; gap: 20px; z-index: 1000; 
-    background: rgba(255, 255, 255, 0.9); padding: 12px 30px; border-radius: 40px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;
-  }
-  .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
-
-  /* 드래그 박스 */
-  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.1); border: 0.5px solid rgba(59, 72, 255, 0.3); box-sizing: border-box; }
-  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; }
-  .dim-label { position: absolute; top: -18px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; }
-
-  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; overflow: hidden; }
-  .item-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; max-width: 90%; }
-  .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
-  .item-card .name { font-size: 10px; font-weight: 800; margin-top: 5px; text-transform: lowercase; }
-
-  /* 🌟 상세 페이지 (모달) 스타일 - 피그마 디자인 반영 */
-  #detailView {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: #fff; background-size: cover; background-position: center;
-    display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
-    transition: opacity 0.3s ease;
-  }
-  #detailView.active { display: flex; }
-
-  /* 중앙 설명 박스 (드래그한 비율 유지) */
-  .ratio-point-box {
-    border: 1px solid #000; background-color: rgba(255, 255, 255, 0.9);
-    padding: 40px; box-sizing: border-box; text-align: center;
-    display: flex; align-items: center; justify-content: center;
-    max-width: 80vw; max-height: 60vh;
-  }
-  .point-text { font-size: 16px; font-weight: 700; color: #000; line-height: 1.6; word-break: keep-all; margin: 0; }
-
-  /* 하단 정보 섹션 */
-  .bottom-info { position: absolute; bottom: 80px; text-align: center; width: 100%; }
-  .detail-name { font-size: 42px; font-weight: 800; color: #000; margin: 0; text-transform: lowercase; }
-  .detail-meta { font-size: 14px; font-weight: 600; color: #555; margin-top: 5px; }
-  .detail-meta span { margin: 0 15px; }
-
-  /* 버튼들 */
-  .nav-btn { position: absolute; bottom: 30px; font-size: 12px; font-weight: 700; color: #000; cursor: pointer; text-decoration: none; border: none; background: none; }
-  .btn-home { left: 40px; }
-  .btn-link { right: 40px; }
+body{margin:0;width:100vw;height:100vh;overflow:hidden;font-family:sans-serif;background:#fff;background-image:radial-gradient(#e5e5e5 1px,transparent 1px);background-size:20px 20px;cursor:crosshair}
+.coord{position:fixed;top:16px;right:20px;font-size:11px;font-weight:700}
+.panel{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;align-items:center;padding:12px 24px;background:rgba(255,255,255,.95);border:1px solid #eee;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.08);z-index:1000}
+.box{position:absolute;border:1px solid #372222;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.08);overflow:auto}
+.label{position:absolute;top:-18px;left:0;font-size:10px;color:#3b48ff;font-weight:700}
+.wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;justify-content:center}
+.card{width:110px;text-align:center;cursor:pointer}
+.card img{width:100%;height:80px;object-fit:contain}
+.name{font-size:10px;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:center;z-index:2000}
+.modal.on{display:flex}.inner{text-align:center;max-width:520px;padding:30px}.inner img{max-width:260px;max-height:260px}
+button{padding:10px 16px;border:1px solid #222;background:#fff;cursor:pointer}
 </style>
 </head>
 <body>
-
-<div id="coordTracker" class="coord-tracker">000 / 000</div>
-
-<div class="control-panel">
-  <label style="font-size:11px; font-weight:800; color:#aaa;">TOLERANCE</label>
-  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.2">
-  <span id="tolValue" class="tol-value">20%</span>
-</div>
-
-<div id="detailView">
-  <div id="ratioBox" class="ratio-point-box">
-    <p id="pointText" class="point-text"></p>
-  </div>
-  
-  <div class="bottom-info">
-    <h1 id="detailName" class="detail-name"></h1>
-    <div class="detail-meta">
-      <span id="detailTime"></span>
-      <span id="detailLevel"></span>
-    </div>
-  </div>
-
-  <button class="nav-btn btn-home" onclick="closeDetail()">홈버튼</button>
-  <a id="detailLink" href="#" target="_blank" class="nav-btn btn-link">도안 참고 링크</a>
-</div>
-
+<div class='coord' id='coord'>0 / 0</div>
+<div class='panel'>Tolerance <input id='slider' type='range' min='0' max='100' value='50'><span id='val'>50%</span></div>
+<div class='modal' id='modal'><div class='inner'><img id='mimg'><h2 id='mt'></h2><p id='mp'></p><button onclick="modal.classList.remove('on')">CLOSE</button></div></div>
 <script>
-  const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
-  const gid = '59083326'; 
-  const baseFolder = 'foldingpapers/assets/'; 
-  let database = [];
-
-  async function init() {
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-    try {
-      const res = await fetch(url);
-      const text = await res.text();
-      const rows = text.split('\n').slice(1);
-      
-      database = rows.map(row => {
-        const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-        if (cols.length >= 5) {
-          const rawRatio = cols[4];
-          let val = 1;
-          const match = rawRatio.match(/^(\d+(\.\d+)?)/);
-          if (match) {
-            if (rawRatio.includes(':')) {
-              const p = rawRatio.split(':');
-              val = parseFloat(p[0]) / parseFloat(p[1]);
-            } else { val = parseFloat(match[1]); }
-          }
-          return { 
-            name: cols[0], 
-            point: cols[1], // B열: 설명
-            image: cols[2], // C열: 파일명
-            ratio: val >= 1 ? val : 1 / val,
-            level: cols[6], // G열: 레벨
-            time: cols[7],  // H열: 시간
-            link: cols[10]  // K열: 링크 (필요시)
-          };
-        }
-        return null;
-      }).filter(d => d !== null);
-    } catch (e) { console.error(e); }
-  }
-  init();
-
-  const slider = document.getElementById('toleranceSlider');
-  const tolText = document.getElementById('tolValue');
-  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
-
-  let isDragging = false;
-  let startX, startY, currentBox, label;
-
-  document.onmousedown = (e) => {
-    if (e.target.closest('.control-panel') || e.target.closest('#detailView')) return;
-    isDragging = true;
-    startX = e.clientX; startY = e.clientY;
-    currentBox = document.createElement('div');
-    currentBox.className = 'drag-box';
-    label = document.createElement('div');
-    label.className = 'dim-label';
-    currentBox.appendChild(label);
-    currentBox.style.left = startX + 'px'; currentBox.style.top = startY + 'px';
-    document.body.appendChild(currentBox);
-  };
-
-  document.onmousemove = (e) => {
-    document.getElementById('coordTracker').textContent = `${e.clientX} / ${e.clientY}`;
-    if (!isDragging) return;
-    let w = Math.abs(e.clientX - startX);
-    let h = Math.abs(e.clientY - startY);
-    currentBox.style.width = w + 'px'; currentBox.style.height = h + 'px';
-    currentBox.style.left = Math.min(e.clientX, startX) + 'px';
-    currentBox.style.top = Math.min(e.clientY, startY) + 'px';
-    if (w > 0 && h > 0) label.textContent = `1:${(Math.max(w, h) / Math.min(w, h)).toFixed(2)}`;
-  };
-
-  document.onmouseup = () => {
-    if (!isDragging) return;
-    isDragging = false;
-    const w = parseInt(currentBox.style.width);
-    const h = parseInt(currentBox.style.height);
-
-    if (w > 30 && h > 30) {
-      const userRatio = Math.max(w, h) / Math.min(w, h);
-      const tol = parseFloat(slider.value);
-      const matched = database.filter(item => {
-        const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
-        return diff <= tol;
-      }).sort((a, b) => {
-        const diffA = Math.max(userRatio / a.ratio, a.ratio / userRatio);
-        const diffB = Math.max(userRatio / b.ratio, b.ratio / userRatio);
-        return diffA - diffB;
-      });
-
-      if (matched.length > 0) {
-        currentBox.classList.add('active-result');
-        const item = matched[0];
-        // 드래그한 비율 정보를 박스에 데이터로 저장
-        currentBox.setAttribute('data-w', w);
-        currentBox.setAttribute('data-h', h);
-
-        currentBox.innerHTML = `
-          <div class="content-wrapper" onclick="openDetail('${item.name}', ${w}, ${h})">
-            <div class="item-card">
-              <img src="${baseFolder}${item.image}">
-              <div class="name">${item.name}</div>
-            </div>
-          </div>
-        `;
-      } else { currentBox.remove(); }
-    } else { currentBox.remove(); }
-  };
-
-  // 🌟 상세 페이지 열기 로직
-  function openDetail(name, w, h) {
-    const item = database.find(d => d.name === name);
-    if (!item) return;
-
-    const detailView = document.getElementById('detailView');
-    const ratioBox = document.getElementById('ratioBox');
-    
-    // 배경 이미지 설정
-    detailView.style.backgroundImage = `url('${baseFolder}${item.image}')`;
-    
-    // 드래그했던 비율 박스 크기 조절 (화면 크기에 맞춰 스케일링)
-    const scale = Math.min(600 / Math.max(w, h), 1);
-    ratioBox.style.width = (w * scale) + "px";
-    ratioBox.style.height = (h * scale) + "px";
-
-    // 데이터 채우기
-    document.getElementById('pointText').textContent = item.point;
-    document.getElementById('detailName').textContent = item.name;
-    document.getElementById('detailTime').textContent = item.time;
-    document.getElementById('detailLevel').textContent = item.level;
-    document.getElementById('detailLink').href = item.link || "#";
-
-    detailView.classList.add('active');
-  }
-
-  function closeDetail() {
-    document.getElementById('detailView').classList.remove('active');
-  }
+const sheetId='1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
+const gid='59083326';
+const baseFolder='foldingpapers/assets/';
+let database=[];
+const coord=document.getElementById('coord');
+const slider=document.getElementById('slider');
+const val=document.getElementById('val');
+const modal=document.getElementById('modal');
+slider.oninput=e=>val.textContent=e.target.value+'%';
+async function init(){
+ const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+ const res=await fetch(url); const text=await res.text();
+ const rows=text.trim().split(/\r?\n/).slice(1);
+ database=rows.map(row=>{
+  const cols=row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v=>v.replace(/^"|"$/g,'').trim())||[];
+  if(cols.length<5) return null;
+  let raw=(cols[4]||'1').replace(/\s/g,'').replace(/：/g,':');
+  let ratio=1;
+  if(raw.includes(':')){const p=raw.split(':').map(Number); if(p[0]&&p[1]) ratio=p[0]/p[1];}
+  else ratio=parseFloat(raw)||1;
+  ratio=ratio>=1?ratio:1/ratio;
+  return {name:cols[0],image:cols[2],ratio,point:cols[8]||''};
+ }).filter(Boolean);
+ console.log(database);
+}
+init();
+let down=false,sx=0,sy=0,box,label;
+document.onmousedown=e=>{
+ if(e.target.closest('.panel')||e.target.closest('.modal')) return;
+ down=true; sx=e.clientX; sy=e.clientY;
+ box=document.createElement('div'); box.className='box';
+ label=document.createElement('div'); label.className='label'; box.appendChild(label);
+ box.style.left=sx+'px'; box.style.top=sy+'px'; document.body.appendChild(box);
+};
+document.onmousemove=e=>{
+ coord.textContent=e.clientX+' / '+e.clientY;
+ if(!down) return;
+ const w=Math.abs(e.clientX-sx), h=Math.abs(e.clientY-sy);
+ box.style.left=Math.min(e.clientX,sx)+'px'; box.style.top=Math.min(e.clientY,sy)+'px';
+ box.style.width=w+'px'; box.style.height=h+'px';
+ if(w>0&&h>0) label.textContent='1:'+(Math.max(w,h)/Math.min(w,h)).toFixed(2);
+};
+document.onmouseup=e=>{
+ if(!down) return; down=false;
+ const w=parseInt(box.style.width), h=parseInt(box.style.height);
+ if(w<20||h<20){box.remove(); return;}
+ const userRatio=Math.max(w,h)/Math.min(w,h);
+ const matched=database.map(item=>({...item,diff:Math.abs(item.ratio-userRatio)})).sort((a,b)=>a.diff-b.diff);
+ const t=parseInt(slider.value);
+ let result=[];
+ if(t===0) result=matched.filter(i=>i.diff<0.03).slice(0,12);
+ else {const count=Math.max(1,Math.round((t/100)*matched.length)); result=matched.slice(0,Math.min(count,12));}
+ if(!result.length){box.remove(); return;}
+ box.innerHTML=`<div class='wrap'>${result.map(i=>`<div class='card' onclick="showPop('${encodeURIComponent(i.name)}')"><img src='${baseFolder}${i.image}'><div class='name'>${i.name}</div></div>`).join('')}</div>`;
+};
+function showPop(n){const name=decodeURIComponent(n); const item=database.find(d=>d.name===name); if(!item) return; document.getElementById('mimg').src=baseFolder+item.image; document.getElementById('mt').textContent=item.name; document.getElementById('mp').textContent=item.point; modal.classList.add('on');}
 </script>
 </body>
 </html>
