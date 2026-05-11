@@ -2,13 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Ratio Analysis</title>
+<title>Origami Archive - Multi-Ratio Strip</title>
 <style>
     /* --- 기초 디자인: 미니멀 & 직각 --- */
-    * { 
-        margin:0; padding:0; box-sizing:border-box; 
-        border-radius: 0 !important; 
-    }
+    * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
         background: #fdfdfd; 
@@ -18,98 +15,79 @@
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 박스: 네온 그린 가이드라인 */
+    /* 드래그 가이드라인 */
     #dragBox { 
-        position:absolute; 
-        border:1px solid #00ff00; 
-        background: rgba(0, 255, 0, 0.02);
+        position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02);
         display:none; pointer-events:none; z-index:1000; 
     }
     #ratioTag { 
-        position:absolute; top:-22px; left:0; 
-        background:#00ff00; color:#000; 
+        position:absolute; top:-22px; left:0; background:#00ff00; color:#000; 
         font-size:10px; font-weight:bold; padding:2px 6px; 
     }
 
-    /* 결과 박스: 순수 미니멀리즘 직각 유지 */
+    /* 결과 박스: 가로형 아카이브 */
     .traceBox { 
-        position:absolute; 
-        border:1px solid #000; 
-        background: #fff; 
-        overflow: hidden; 
-        display: flex;
-        flex-direction: column;
-        z-index: 50;
+        position:absolute; border:1px solid #000; background: #fff; 
+        z-index: 50; display: flex; flex-direction: column;
     }
 
-    /* 상세 화면 (모달) */
+    /* 상단 정보바: 키치한 데이터 표시 */
+    .box-header {
+        height: 18px; border-bottom: 1px solid #000;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 8px; font-size: 8px; background: #fafafa;
+    }
+
+    /* [핵심] 이미지 리스트: 가로 배치 및 스크롤 */
+    .image-list {
+        flex: 1; display: flex; overflow-x: auto; overflow-y: hidden;
+        padding: 10px; gap: 15px; align-items: center;
+    }
+    /* 스크롤바 디자인 (미니멀) */
+    .image-list::-webkit-scrollbar { height: 2px; }
+    .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
+
+    /* 개별 아이템: 이미지가 절대 잘리지 않음 */
+    .item-wrapper {
+        height: 100%; flex-shrink: 0; 
+        display: flex; flex-direction: column; align-items: center;
+        cursor: pointer; position: relative;
+    }
+
+    .result-img {
+        height: calc(100% - 15px); /* 아래 텍스트 공간 제외 */
+        width: auto; max-width: none;
+        object-fit: contain; /* [핵심] 원본 비율 유지, 잘림 방지 */
+        border: 0.5px solid #eee;
+        transition: transform 0.2s;
+    }
+    .item-wrapper:hover .result-img { transform: translateY(-2px); border-color: #00ff00; }
+
+    .item-name { font-size: 8px; margin-top: 5px; color: #888; text-transform: uppercase; }
+
+    /* 상세 화면 모달 */
     #detailView {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #fff; display: none; z-index: 2000;
         flex-direction: column; align-items: center; justify-content: center;
         cursor: pointer; padding: 40px;
     }
-    #detailBgImg {
-        position: absolute; width: 300px; opacity: 0.1; z-index: -1;
-        filter: grayscale(1);
-    }
     #detailPointBox {
         border: 1px solid #000; padding: 40px; max-width: 500px;
-        text-align: left; font-size: 14px; line-height: 1.8;
-        margin-bottom: 40px; background: #fff;
+        text-align: left; font-size: 14px; line-height: 1.8; margin-bottom: 40px;
     }
     #detailName { font-size: 24px; font-weight: normal; margin-bottom: 15px; text-decoration: underline; }
     #detailMeta { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
 
-    /* 조작 패널 */
+    /* 패널 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:220px; 
         background:#fff; padding:25px; border:1px solid #000; z-index:2000; 
     }
     #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
-    #status { font-size:9px; margin-bottom:15px; color: #888; }
+    #status { font-size:9px; color: #888; margin-bottom: 10px; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
-
-    /* --- [핵심 수정] 결과 아이템 레이아웃 --- */
-    .result-item {
-        position: relative;
-        width: 100%; height: 100%;
-        display: flex;
-        justify-content: center; 
-        align-items: center;
-        background: #fff; 
-        cursor: pointer;
-    }
-
-    /* 이미지가 절대 잘리지 않도록 contain 설정 */
-    .result-img {
-        width: 100%; height: 100%;
-        object-fit: contain; /* [핵심] 원본 비율 유지, 잘림 방지 */
-        transition: transform 0.2s;
-        z-index: 2;
-    }
-
-    /* 이미지가 차지하지 않는 여백(Letterbox) 공간을 위한 디자인 요소 */
-    .result-item::before {
-        content: "";
-        position: absolute;
-        top: 10%; left: 10%; right: 10%; bottom: 10%;
-        border: 0.5px dashed rgba(0, 255, 0, 0.3); /* 포에틱한 점선 가이드 */
-        z-index: 1;
-    }
-
-    /* 여백 공간에 배치되는 시각 데이터 */
-    .result-data {
-        position: absolute;
-        font-size: 9px;
-        font-weight: bold;
-        color: #000;
-        z-index: 3;
-    }
-    .data-ratio { top: 8px; left: 8px; color: #00ff00; background: #000; padding: 2px 4px; }
-    .data-name { bottom: 8px; right: 8px; border-bottom: 1px solid #00ff00; }
-
 </style>
 </head>
 <body>
@@ -119,16 +97,15 @@
 </div>
 
 <div id="detailView">
-    <img id="detailBgImg" src="">
-    <div id="detailPointBox"></div>
     <div id="detailName"></div>
+    <div id="detailPointBox"></div>
     <div id="detailMeta">
         <span id="detailTime"></span> • <span id="detailLevel"></span>
     </div>
 </div>
 
 <div id="panel">
-    <h1>Ratio Archive v2.1</h1>
+    <h1>Archive.sys_v3</h1>
     <div id="status">CONNECTING...</div>
     <label style="font-size: 10px;">TOLERANCE: <span id="tolText">30%</span></label>
     <input type="range" min="1" max="100" value="30" id="tol">
@@ -146,21 +123,16 @@ async function init() {
     try {
         const response = await fetch(SHEET_URL);
         const data = await response.json();
-        
         db = data.map(item => {
-            let rRaw = item.ratio;
-            let rVal = parseFloat(rRaw);
+            let rVal = parseFloat(item.ratio);
             return {
-                name: item.name, 
-                image: item.image ? item.image.trim() : "",
-                point: item.point, 
-                level: item.level, 
-                time: item.time,
+                name: item.name, image: item.image?.trim(),
+                point: item.point, level: item.level, time: item.time,
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
             };
-        }).filter(item => !isNaN(item.normRatio));
-        document.getElementById("status").innerHTML = `CONNECT: ${db.length} ITEMS`;
-    } catch (e) { document.getElementById("status").innerHTML = `ERROR`; }
+        }).filter(item => !isNaN(item.normRatio) && item.image);
+        document.getElementById("status").innerHTML = `INDEXED: ${db.length} ITEMS`;
+    } catch (e) { document.getElementById("status").innerHTML = `CONNECTION ERROR`; }
 }
 init();
 
@@ -181,12 +153,12 @@ stage.addEventListener("mousemove", (e) => {
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `1:${currentR.toFixed(2)}`;
+    document.getElementById("ratioTag").innerHTML = `R: 1:${currentR.toFixed(2)}`;
 });
 stage.addEventListener("mouseup", (e) => {
     if(!isDown) return; isDown = false; dragBox.style.display = "none";
     const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    if(w < 20 || h < 20) return;
+    if(w < 25 || h < 25) return;
     createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
 });
 
@@ -200,28 +172,33 @@ function createResultBox(x, y, w, h, userRatio) {
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
 
     if (results.length > 0) {
-        const item = results[0];
-        const wrapper = document.createElement("div");
-        wrapper.className = "result-item";
-        wrapper.onclick = (e) => { e.stopPropagation(); showDetail(item); };
-        
-        wrapper.innerHTML = `
-            <div class="result-data data-ratio">R: 1:${userRatio.toFixed(1)}</div>
-            <img src="${ASSET_PATH + item.image}" class="result-img">
-            <div class="result-data data-name">${item.name}</div>
+        let itemsHTML = results.map(item => `
+            <div class="item-wrapper" onclick="event.stopPropagation(); showDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
+                <img src="${ASSET_PATH + item.image}" class="result-img">
+                <span class="item-name">${item.name}</span>
+            </div>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="box-header">
+                <span>RATIO: 1:${userRatio.toFixed(1)}</span>
+                <span>MATCH: ${results.length}</span>
+            </div>
+            <div class="image-list">${itemsHTML}</div>
         `;
-        box.appendChild(wrapper);
+    } else {
+        box.innerHTML = `<div style="flex:1; display:flex; align-items:center; justify-content:center; font-size:9px; color:#ccc;">NO MATCH</div>`;
     }
 }
 
-function showDetail(item) {
-    const detailView = document.getElementById("detailView");
-    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
-    document.getElementById("detailPointBox").innerText = item.point || "No description.";
+function showDetail(encoded) {
+    const item = JSON.parse(decodeURIComponent(atob(encoded)));
+    const view = document.getElementById("detailView");
     document.getElementById("detailName").innerText = item.name;
+    document.getElementById("detailPointBox").innerText = item.point || "No description.";
     document.getElementById("detailTime").innerText = item.time;
     document.getElementById("detailLevel").innerText = "LEV." + item.level;
-    detailView.style.display = "flex";
+    view.style.display = "flex";
 }
 
 document.getElementById("detailView").onclick = function() { this.style.display = "none"; };
