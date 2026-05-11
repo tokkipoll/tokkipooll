@@ -2,25 +2,24 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Specimen Archive</title>
+<title>Origami Specimen Multi-Archive</title>
 <style>
-    /* --- 기초 디자인: 미니멀 & 수직/수평 --- */
+    /* --- 기초 디자인: 미니멀 & 직각 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
-        background: #f0f0f0; 
+        background: #fdfdfd; 
         font-family: 'Courier New', Courier, monospace; 
         overflow: hidden; 
-        color: #000;
     }
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 박스: 얇은 가이드라인 */
+    /* 드래그 가이드 */
     #dragBox { 
         position:absolute; 
         border:1px solid #00ff00; 
-        background: rgba(0, 255, 0, 0.05);
+        background: rgba(0, 255, 0, 0.02);
         display:none; pointer-events:none; z-index:1000; 
     }
     #ratioTag { 
@@ -29,67 +28,88 @@
         font-size:10px; font-weight:bold; padding:2px 6px; 
     }
 
-    /* 결과 박스: 표본 전시 케이스 (Specimen Box) */
+    /* 결과 박스: 여러 항목을 담는 가로형 아카이브 */
     .traceBox { 
         position:absolute; 
         border:1px solid #000; 
         background: #fff;
         z-index: 50;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
     }
 
-    /* 상자 모서리 L자 크롭 마크 (키치 포인트) */
-    .traceBox::before {
-        content: ""; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px;
-        border-top: 2px solid #00ff00; border-left: 2px solid #00ff00; z-index: 10;
+    /* 상단 정보바: 키치한 데이터 표시 */
+    .box-header {
+        height: 20px; border-bottom: 1px solid #000;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 8px; font-size: 8px; background: #fafafa;
     }
 
-    /* 이미지: 상자 비율에 맞춰 꽉 채우기 (핵심) */
-    .result-container {
-        flex: 1; width: 100%; height: 100%;
-        overflow: hidden; position: relative;
-        cursor: pointer;
+    /* 이미지 리스트: 가로 스크롤 (여러 항목 노출 핵심) */
+    .image-list {
+        flex: 1;
+        display: flex;
+        overflow-x: auto; /* 가로 스크롤 허용 */
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        gap: 0;
     }
+    /* 스크롤바 숨기기 */
+    .image-list::-webkit-scrollbar { display: none; }
+
+    .item-wrapper {
+        flex: 0 0 100%; /* 상자 너비를 가득 채우며 하나씩 보임 */
+        height: 100%;
+        scroll-snap-align: start;
+        position: relative;
+        cursor: pointer;
+        border-right: 1px solid rgba(0,0,0,0.05);
+    }
+
     .result-img {
         width: 100%; height: 100%;
         object-fit: cover; /* 비율에 맞춰 꽉 채움 */
-        filter: grayscale(0.3); transition: filter 0.3s;
+        filter: grayscale(0.5); transition: 0.3s;
     }
-    .result-container:hover .result-img { filter: grayscale(0); }
+    .item-wrapper:hover .result-img { filter: grayscale(0); }
 
-    /* 하단 라벨: 바코드 및 데이터 (키치 & 미니멀) */
+    /* 이미지 위 캡션 */
+    .img-caption {
+        position: absolute; bottom: 5px; left: 5px;
+        background: #00ff00; color: #000;
+        font-size: 8px; padding: 2px 4px; font-weight: bold;
+    }
+
+    /* 하단 라벨 */
     .result-label {
-        height: 40px; border-top: 1px solid #000;
-        background: #fff; display: flex; align-items: center;
-        padding: 0 10px; font-size: 9px; justify-content: space-between;
+        height: 25px; border-top: 1px solid #000;
+        display: flex; align-items: center; padding: 0 8px;
+        font-size: 8px; gap: 10px;
     }
-    .barcode { font-size: 14px; font-family: 'Libre Barcode 39', cursive, sans-serif; }
 
-    /* 상세 화면 (모달) */
+    /* 상세 화면 */
     #detailView {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #fff; display: none; z-index: 2000;
         flex-direction: column; align-items: center; justify-content: center;
-        padding: 60px; cursor: s-resize;
+        padding: 60px; cursor: pointer;
     }
+    #detailName { font-size: 24px; letter-spacing: 8px; margin-bottom: 20px; text-decoration: underline; }
     #detailPointBox {
         border-top: 1px solid #000; border-bottom: 1px solid #000;
-        padding: 60px 20px; width: 100%; max-width: 600px;
-        text-align: center; font-size: 16px; line-height: 2; margin: 40px 0;
+        padding: 40px 20px; width: 100%; max-width: 500px;
+        text-align: center; font-size: 14px; line-height: 1.8;
     }
-    #detailName { font-size: 32px; letter-spacing: 12px; font-weight: normal; }
-    #detailMeta { font-size: 10px; letter-spacing: 2px; color: #888; }
+    #detailMeta { font-size: 10px; margin-top: 20px; color: #888; }
 
-    /* 조작 패널 */
+    /* 패널 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:220px; 
-        background:#fff; padding:25px; border:1px solid #000; z-index:2000; 
+        background:#fff; padding:20px; border:1px solid #000; z-index:2000; 
     }
-    #panel h1 { font-size:12px; margin-bottom:15px; letter-spacing: 2px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-    #status { font-size:9px; margin-bottom:15px; color: #aaa; }
-    #tol { width:100%; margin:10px 0; -webkit-appearance:none; background:#000; height:1px; }
+    #panel h1 { font-size:12px; margin-bottom:10px; border-bottom: 1px solid #000; }
+    #status { font-size:9px; color: #aaa; margin-bottom: 10px; }
+    #tol { width:100%; margin:5px 0; -webkit-appearance:none; background:#000; height:1px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; background:#00ff00; border:1px solid #000; cursor:pointer; }
 </style>
 </head>
@@ -106,8 +126,8 @@
 </div>
 
 <div id="panel">
-    <h1>SPECIMEN_ARCHIVE.sys</h1>
-    <div id="status">Scanning...</div>
+    <h1>Multi_Specimen.v3</h1>
+    <div id="status">Scanning Ratio...</div>
     <input type="range" min="1" max="100" value="50" id="tol">
 </div>
 
@@ -126,7 +146,6 @@ async function init() {
         const csvText = await response.text();
         const rows = csvText.split('\n').map(row => row.split(','));
         const headers = rows[0].map(h => h.trim().toLowerCase());
-        
         const idx = {
             name: headers.findIndex(h => h.includes('name')),
             image: headers.findIndex(h => h.includes('image')),
@@ -135,7 +154,6 @@ async function init() {
             level: headers.findIndex(h => h.includes('level')),
             time: headers.findIndex(h => h.includes('time'))
         };
-
         db = rows.slice(1).map(row => {
             let rRaw = row[idx.ratio];
             let rVal = parseFloat(rRaw);
@@ -144,7 +162,7 @@ async function init() {
                 rVal = parseFloat(p[p.length-1]) / parseFloat(p[0]);
             }
             return {
-                name: row[idx.name] || "Unknown",
+                name: row[idx.name] || "NoName",
                 image: row[idx.image] ? row[idx.image].trim() : "",
                 point: row[idx.point] || "",
                 level: row[idx.level] || "",
@@ -152,8 +170,8 @@ async function init() {
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
             };
         }).filter(item => item.image !== "");
-        document.getElementById("status").innerHTML = `Objects: ${db.length}`;
-    } catch (e) { document.getElementById("status").innerHTML = `Offline`; }
+        document.getElementById("status").innerHTML = `Database: ${db.length}`;
+    } catch (e) { document.getElementById("status").innerHTML = `Link Error`; }
 }
 init();
 
@@ -171,7 +189,7 @@ stage.addEventListener("mousemove", (e) => {
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `Target Ratio 1:${currentR.toFixed(2)}`;
+    document.getElementById("ratioTag").innerHTML = `1:${currentR.toFixed(2)}`;
 });
 
 stage.addEventListener("mouseup", (e) => {
@@ -191,23 +209,27 @@ function createResultBox(x, y, w, h, userRatio) {
     const results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tolerance));
 
     if (results.length > 0) {
-        const item = results[0]; // 가장 유사한 표본 하나를 박스에 꽉 채움
-        box.innerHTML = `
-            <div class="result-container" onclick="showDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
+        let itemsHTML = results.map((item, i) => `
+            <div class="item-wrapper" onclick="showDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
                 <img src="${ASSET_PATH + item.image}" class="result-img">
+                <div class="img-caption">${i+1}/${results.length}</div>
             </div>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="box-header">
+                <span>RATIO_MATCH: 1:${userRatio.toFixed(1)}</span>
+                <span>COUNT: ${results.length}</span>
+            </div>
+            <div class="image-list">${itemsHTML}</div>
             <div class="result-label">
-                <span>OBJ_ID: ${item.name.substring(0,3).toUpperCase()}</span>
-                <span>R: 1:${item.normRatio.toFixed(1)}</span>
-                <span class="barcode">||| || | |||</span>
+                <span>SCROLL TO BROWSE</span>
+                <span style="color:#00ff00">● ANALYZED</span>
             </div>
         `;
     } else {
-        box.innerHTML = `<div style="flex:1; display:flex; align-items:center; justify-content:center; font-size:10px; color:#ccc;">NON_MATCH</div>`;
+        box.innerHTML = `<div style="flex:1; display:flex; align-items:center; justify-content:center; font-size:10px; color:#ccc;">NO DATA</div>`;
     }
-    
-    const all = document.querySelectorAll(".traceBox");
-    if(all.length > 5) all[0].remove();
 }
 
 function showDetail(encoded) {
