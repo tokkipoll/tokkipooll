@@ -3,40 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Perfect Match</title>
+<title>tokkipooll - Ratio Archiving</title>
 <style>
   body {
     margin: 0; padding: 0; width: 100vw; height: 100vh;
-    background-color: #ffffff; background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
-    background-size: 20px 20px; overflow: hidden; user-select: none; cursor: crosshair;
+    background-color: #ffffff; 
+    background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
+    background-size: 20px 20px;
+    overflow: hidden; user-select: none; cursor: crosshair; 
     font-family: 'Pretendard', sans-serif;
   }
+
+  /* 상단 상태 바 */
   .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; }
+  
+  /* 하단 컨트롤 패널 */
   .control-panel { 
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
     display: flex; align-items: center; gap: 20px; z-index: 1000; 
-    background: white; padding: 12px 30px; border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+    background: rgba(255, 255, 255, 0.9); padding: 12px 30px; border-radius: 40px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(5px);
   }
   .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
   
-  /* 드래그 흔적 박스 스타일 */
-  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.5); border: 1px dashed #3b48ff; box-sizing: border-box; }
-  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  
-  .dim-label { position: absolute; top: -18px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; white-space: nowrap; }
-  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 5px; box-sizing: border-box; overflow: hidden; }
-  .item-card { display: flex; flex-direction: column; align-items: center; max-width: 95%; max-height: 95%; }
-  .item-card img { max-width: 100%; max-height: 75%; object-fit: contain; }
-  .item-name { font-size: 9px; font-weight: 800; margin-top: 4px; color: #333; text-align: center; }
+  /* 드래그 흔적 박스 */
+  .drag-box { 
+    position: absolute; background-color: rgba(255, 255, 255, 0.2); 
+    border: 1px dashed rgba(59, 72, 255, 0.3); box-sizing: border-box; overflow: visible; 
+  }
+  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+
+  .dim-label { 
+    position: absolute; top: -20px; left: 0; font-size: 9px; 
+    font-weight: 700; color: #3b48ff; white-space: nowrap; 
+  }
+
+  .content-wrapper { 
+    width: 100%; height: 100%; display: flex; flex-wrap: wrap; 
+    justify-content: center; align-items: center; gap: 10px; padding: 10px; box-sizing: border-box; overflow: hidden;
+  }
+
+  .item-card { 
+    display: flex; flex-direction: column; align-items: center; 
+    max-width: 45%; max-height: 80%; transition: transform 0.2s;
+  }
+  .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
+  .item-name { font-size: 10px; font-weight: 800; color: #333; margin-top: 5px; text-transform: lowercase; }
+
+  /* 모달 */
+  .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 2000; display: none; align-items: center; justify-content: center; }
+  .modal.active { display: flex; }
 </style>
 </head>
 <body>
 
 <div id="coordTracker" class="coord-tracker">000 / 000</div>
+
 <div class="control-panel">
   <label style="font-size:11px; font-weight:800; color:#aaa;">TOLERANCE</label>
-  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.3">
-  <span id="tolValue" class="tol-value">30%</span>
+  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.2">
+  <span id="tolValue" class="tol-value">20%</span>
+</div>
+
+<div id="detailModal" class="modal">
+  <div style="text-align:center;">
+    <img id="modalImg" src="" style="max-width:300px; margin-bottom:20px;">
+    <h1 id="modalTitle" style="font-size:32px;"></h1>
+    <p id="modalPoint" style="max-width:400px; font-size:14px; color:#666;"></p>
+    <button onclick="document.getElementById('detailModal').classList.remove('active')" style="cursor:pointer; padding:10px 20px;">CLOSE</button>
+  </div>
 </div>
 
 <script>
@@ -45,7 +80,7 @@
   const baseFolder = 'foldingpapers/assets/'; 
   let database = [];
 
-  // 시트 데이터를 가져와서 비율을 숫자로 정밀 변환
+  // 1. 데이터 로드: 시트의 비율을 정규화(항상 1보다 크게)해서 저장
   async function init() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     try {
@@ -56,44 +91,51 @@
       database = rows.map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         if (cols.length >= 5) {
-          const rawRatio = cols[4]; // E열: ratio (예: "6:4")
+          const rawRatio = cols[4]; // E열: ratio (6:4 등)
           let val = 1;
-
-          if (rawRatio.includes(':')) {
-            const parts = rawRatio.split(':');
-            val = parseFloat(parts[0]) / parseFloat(parts[1]);
-          } else {
-            val = parseFloat(rawRatio) || 1;
+          const match = rawRatio.match(/^(\d+(\.\d+)?)/);
+          if (match) {
+            // "6:4" 같은 텍스트면 앞뒤 나눠서 계산, 아니면 그냥 숫자 파싱
+            if (rawRatio.includes(':')) {
+              const p = rawRatio.split(':');
+              val = parseFloat(p[0]) / parseFloat(p[1]);
+            } else {
+              val = parseFloat(match[1]);
+            }
           }
           
-          // 가로/세로 구분 없이 '긴 쪽 / 짧은 쪽'으로 정규화 (항상 1 이상)
+          // 가로세로 상관없이 '큰 값 / 작은 값'으로 정규화
           const normRatio = val >= 1 ? val : 1 / val;
 
-          return { name: cols[0], image: cols[2], ratio: normRatio };
+          return { name: cols[0], image: cols[2], ratio: normRatio, point: cols[8] || "" };
         }
         return null;
       }).filter(d => d !== null);
-      console.log("매칭 시스템 준비 완료:", database);
-    } catch (e) { console.error("데이터 로드 실패", e); }
+    } catch (e) { console.error("Database Error", e); }
   }
 
   init();
 
   const slider = document.getElementById('toleranceSlider');
   const tolText = document.getElementById('tolValue');
-  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
+  slider.oninput = (e) => {
+    let val = Math.round((parseFloat(e.target.value) - 1) * 100);
+    tolText.textContent = val + "%";
+  };
 
   let isDragging = false;
   let startX, startY, currentBox, label;
 
   document.onmousedown = (e) => {
-    if (e.target.closest('.control-panel')) return;
+    if (e.target.closest('.control-panel') || e.target.closest('.modal')) return;
     isDragging = true;
     startX = e.clientX; startY = e.clientY;
+    
     currentBox = document.createElement('div');
     currentBox.className = 'drag-box';
     label = document.createElement('div');
     label.className = 'dim-label';
+    
     currentBox.appendChild(label);
     currentBox.style.left = startX + 'px';
     currentBox.style.top = startY + 'px';
@@ -103,6 +145,7 @@
   document.onmousemove = (e) => {
     document.getElementById('coordTracker').textContent = `${e.clientX} / ${e.clientY}`;
     if (!isDragging) return;
+    
     let w = Math.abs(e.clientX - startX);
     let h = Math.abs(e.clientY - startY);
     currentBox.style.width = w + 'px';
@@ -112,7 +155,7 @@
     
     if (w > 0 && h > 0) {
       const r = Math.max(w, h) / Math.min(w, h);
-      label.textContent = `1:${r.toFixed(2)}`;
+      label.textContent = `Ratio 1:${r.toFixed(2)}`;
     }
   };
 
@@ -123,15 +166,17 @@
     const w = parseInt(currentBox.style.width);
     const h = parseInt(currentBox.style.height);
 
-    if (w > 30 && h > 30) {
+    if (w > 20 && h > 20) {
       const userRatio = Math.max(w, h) / Math.min(w, h);
-      const tol = parseFloat(slider.value);
+      const tol = parseFloat(slider.value); // 허용 오차 (1.0 ~ 2.0)
 
-      // 🌟 핵심: 사용자 비율과 시트 비율의 '오차'가 가장 적은 순으로 정렬
+      // 🌟 핵심 로직: 드래그 비율과 시트 데이터 비교 필터링
       const matched = database.filter(item => {
+        // 드래그 비율과 시트 비율의 '거리' 계산
         const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
         return diff <= tol; 
       }).sort((a, b) => {
+        // 가장 닮은 순서대로 정렬
         const diffA = Math.max(userRatio / a.ratio, a.ratio / userRatio);
         const diffB = Math.max(userRatio / b.ratio, b.ratio / userRatio);
         return diffA - diffB;
@@ -139,20 +184,38 @@
 
       if (matched.length > 0) {
         currentBox.classList.add('active-result');
-        const best = matched[0]; // 비율이 가장 잘 맞는 '딱 하나'만 표시
-        currentBox.innerHTML = `
-          <div class="content-wrapper">
-            <div class="item-card">
-              <img src="${baseFolder}${best.image}" alt="${best.name}">
-              <div class="item-name">${best.name}</div>
-            </div>
-          </div>
-        `;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'content-wrapper';
+        
+        // 박스 크기에 따라 최대 2개까지 유사 항목 추천
+        matched.slice(0, 2).forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'item-card';
+          card.onclick = () => showDetail(item.name);
+          card.innerHTML = `
+            <img src="${baseFolder}${item.image}" alt="${item.name}">
+            <div class="item-name">${item.name}</div>
+          `;
+          wrapper.appendChild(card);
+        });
+        currentBox.appendChild(wrapper);
+        label.style.display = 'none'; // 비율 텍스트 숨김
       } else {
-        currentBox.remove(); 
+        currentBox.remove(); // 맞는 게 없으면 흔적 삭제
       }
-    } else { currentBox.remove(); }
+    } else {
+      currentBox.remove();
+    }
   };
+
+  function showDetail(name) {
+    const item = database.find(d => d.name === name);
+    if (!item) return;
+    document.getElementById('modalImg').src = baseFolder + item.image;
+    document.getElementById('modalTitle').textContent = item.name;
+    document.getElementById('modalPoint').textContent = item.point;
+    document.getElementById('detailModal').classList.add('active');
+  }
 </script>
 </body>
 </html>
