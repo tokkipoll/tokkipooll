@@ -4,153 +4,126 @@
 <meta charset="UTF-8" />
 <title>Origami Ratio Search</title>
 <style>
-    /* --- 완전 직각 디자인 스타일 --- */
-    * { 
-        margin:0; padding:0; box-sizing:border-box; 
-        border-radius: 0 !important; /* 모든 둥근 모서리 제거 */
-    }
-
-    body { 
-        background:#ececec; 
-        font-family: 'Malgun Gothic', sans-serif; 
-        overflow:hidden; 
-    }
-
-    /* 메인 작업 공간 */
-    #stage { 
-        position:relative; 
-        width:100vw; height:100vh; 
-        cursor:crosshair; 
-    }
-
-    /* 드래그 사각형 */
+    /* 직각 디자인 스타일 */
+    * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
+    body { background:#f4f4f4; font-family: sans-serif; overflow:hidden; }
+    
+    #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
+    
+    /* 드래그 중인 박스 */
     #dragBox { 
         position:absolute; 
         border:2px solid #000; 
-        background:rgba(0,0,0,0.05); 
+        background:rgba(255,255,255,0.5); /* 드래그 중에는 약간 투명 */
         display:none; 
         pointer-events:none; 
         z-index:100; 
     }
-
-    /* 비율 표시 태그 */
+    
     #ratioTag { 
-        position:absolute; 
-        top:-28px; left:0; 
+        position:absolute; top:-26px; left:0; 
         background:#000; color:#fff; 
-        font-size:12px; font-weight:bold; 
-        padding:4px 10px; 
-        white-space:nowrap; 
+        font-size:12px; font-weight:bold; padding:4px 8px; white-space:nowrap; 
     }
 
-    /* 결과 박스 (흔적) */
+    /* 결과 박스 (불투명한 하얀색으로 수정) */
     .traceBox { 
         position:absolute; 
-        border:1px solid rgba(0,0,0,0.2); 
-        background:rgba(255,255,255,0.5); 
-        overflow:hidden; 
-        display:flex; align-items:center; justify-content:center;
+        border:2px solid #000; 
+        background:#ffffff; /* 완전 불투명 하얀색 */
+        overflow-y: auto; /* 내용이 많으면 스크롤 */
+        display: flex; 
+        flex-wrap: wrap; /* 이미지가 겹치지 않게 줄바꿈 */
+        align-content: flex-start;
+        padding: 10px;
+        gap: 10px; /* 이미지 사이 간격 */
         transition: opacity 0.5s;
     }
 
-    /* 결과 없음 텍스트 */
-    .no-result { 
-        font-size:11px; color:#888; font-weight: bold; 
-    }
+    .no-result { font-size:11px; color:#666; font-weight: bold; width: 100%; text-align: center; }
 
-    /* 종이접기 이미지 */
+    /* 결과 이미지 스타일 (겹치지 않도록 정렬됨) */
     .traceBox img { 
-        position:absolute; 
-        max-width:85%; max-height:85%; 
-        object-fit:contain; 
-        pointer-events:none; 
+        width: 60px; /* 이미지 크기 고정 */
+        height: 60px; 
+        object-fit: contain; 
+        border: 1px solid #eee;
     }
-
-    /* 조작 패널 */
+    
     #panel { 
-        position:fixed; 
-        left:20px; bottom:20px; 
-        width:280px; 
-        background:#fff; 
-        padding:20px; 
-        border:2px solid #000; 
-        box-shadow: 6px 6px 0px rgba(0,0,0,0.1); 
-        z-index:200; 
+        position:fixed; left:18px; bottom:18px; width:280px; 
+        background:#fff; padding:20px; border:2px solid #000; 
+        box-shadow:5px 5px 0px rgba(0,0,0,0.1); z-index:200; 
     }
-
-    #panel h1 { 
-        font-size:18px; margin-bottom:15px; 
-        border-bottom:3px solid #000; padding-bottom:5px; 
-    }
-
-    #tol { 
-        width:100%; margin:15px 0; 
-        -webkit-appearance:none; background:#ddd; height:10px; 
-    }
-
-    #tol::-webkit-slider-thumb { 
-        -webkit-appearance:none; width:20px; height:20px; 
-        background:#000; cursor:pointer; 
-    }
-
-    #info { font-size:12px; line-height:1.6; color:#444; }
+    #panel h1 { font-size:16px; margin-bottom:12px; border-bottom:2px solid #000; padding-bottom:8px; }
+    #status { font-size:11px; margin-bottom:10px; padding:6px; background:#f0f0f0; border:1px solid #ccc; }
+    #tol { width:100%; margin:12px 0; -webkit-appearance:none; background:#ccc; height:8px; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; background:#000; cursor:pointer; }
 </style>
 </head>
 <body>
 
 <div id="stage">
-    <div id="dragBox"><div id="ratioTag">1 : 1.00</div></div>
+    <div id="dragBox"><div id="ratioTag">Ratio 1 : 1.00</div></div>
 </div>
 
 <div id="panel">
     <h1>Origami Ratio Search</h1>
-    <label><b>Tolerance:</b> <span id="tolText">30%</span></label>
-    <input type="range" min="1" max="100" value="30" id="tol">
-    <div id="info">
-        • 원하는 비율로 화면을 <b>드래그</b>하세요.<br>
-        • <b>Spacebar:</b> 모든 박스 삭제<br>
-        • 시트 데이터와 비율이 맞으면 이미지가 뜹니다.
-    </div>
+    <div id="status">데이터 불러오는 중...</div>
+    <label>Tolerance: <span id="tolText">50%</span></label>
+    <input type="range" min="1" max="100" value="50" id="tol">
 </div>
 
 <script>
-/* --- 설정값 --- */
-const SHEET_URL = "https://opensheet.elk.sh/1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60/Sheet1";
+const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const ASSET_PATH = "foldingpapers/assets/"; 
 
 let db = [];
 let isDown = false;
 let startX, startY;
 
+const statusDiv = document.getElementById("status");
 const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
 const ratioTag = document.getElementById("ratioTag");
-const tol = document.getElementById("tol");
-const tolText = document.getElementById("tolText");
 
-/* --- 1. 구글 시트 데이터 로드 --- */
-fetch(SHEET_URL).then(r => r.json()).then(data => {
-    db = data.map(item => {
-        // 시트의 ratio 열에서 숫자만 추출
-        let rVal = parseFloat(item.ratio);
-        
-        // 시트의 image 열에서 파일명 추출
-        let imgFile = item.image ? item.image.trim() : "";
+function parseCSV(csvText) {
+    const lines = csvText.split("\n");
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const ratioIdx = headers.findIndex(h => h.includes("ratio"));
+    const imageIdx = headers.findIndex(h => h.includes("image"));
 
-        // 비율이 1보다 작으면(예: 0.4) 검색을 위해 역수(2.5)로 변환하여 저장
-        let normalized = (rVal > 0 && rVal < 1) ? 1/rVal : rVal;
-
-        return { 
-            name: item.name,
-            image: imgFile,
-            normRatio: normalized 
+    return lines.slice(1).map(line => {
+        const columns = line.split(",");
+        let rRaw = columns[ratioIdx];
+        let rVal = parseFloat(rRaw);
+        if (rRaw && rRaw.includes(':')) {
+            const parts = rRaw.split(':');
+            rVal = parseFloat(parts[parts.length - 1]) / parseFloat(parts[0] || 1);
+        }
+        return {
+            image: columns[imageIdx] ? columns[imageIdx].trim() : "",
+            normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
         };
     }).filter(item => !isNaN(item.normRatio));
-    console.log("시트 데이터 로드 완료:", db);
-});
+}
 
-/* --- 2. 드래그 이벤트 --- */
-tol.addEventListener("input", () => { tolText.innerText = tol.value + "%"; });
+async function init() {
+    try {
+        const response = await fetch(CSV_URL);
+        const csvText = await response.text();
+        db = parseCSV(csvText);
+        statusDiv.innerHTML = `✅ 연결 성공: <b>${db.length}개 데이터</b>`;
+    } catch (e) {
+        statusDiv.innerHTML = `❌ 연결 실패: 공유 설정을 확인하세요.`;
+    }
+}
+init();
+
+document.getElementById("tol").addEventListener("input", (e) => { 
+    document.getElementById("tolText").innerText = e.target.value + "%"; 
+});
 
 stage.addEventListener("mousedown", (e) => {
     isDown = true;
@@ -162,13 +135,10 @@ stage.addEventListener("mousemove", (e) => {
     if(!isDown) return;
     const w = Math.abs(e.clientX - startX);
     const h = Math.abs(e.clientY - startY);
-    
     dragBox.style.width = w + "px";
     dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px";
     dragBox.style.top = Math.min(e.clientY, startY) + "px";
-    
-    // 현재 드래그 비율 실시간 표시 (긴 변 / 짧은 변)
     const currentR = w > h ? (w/h) : (h/w);
     ratioTag.innerHTML = `Ratio 1 : ${currentR.toFixed(2)}`;
 });
@@ -177,71 +147,40 @@ stage.addEventListener("mouseup", (e) => {
     if(!isDown) return;
     isDown = false;
     dragBox.style.display = "none";
-
     const w = Math.abs(e.clientX - startX);
     const h = Math.abs(e.clientY - startY);
     if(w < 20 || h < 20) return;
-
-    const userRatio = w > h ? (w/h) : (h/w);
-    createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, userRatio);
+    createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
 });
 
-/* --- 3. 결과 박스 및 이미지 생성 --- */
 function createResultBox(x, y, w, h, userRatio) {
     const box = document.createElement("div");
     box.className = "traceBox";
     Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
     stage.appendChild(box);
 
-    const tVal = Number(tol.value) / 100;
-    
-    // 시트 숫자와 사용자 드래그 비율 비교
-    let results = db.filter(item => {
-        const diff = Math.abs(item.normRatio - userRatio);
-        return diff <= (userRatio * tVal);
-    });
+    const tVal = Number(document.getElementById("tol").value) / 100;
+    let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
 
     if (results.length === 0) {
         box.innerHTML = `<span class="no-result">일치 없음 (1:${userRatio.toFixed(1)})</span>`;
     } else {
-        // 가장 비슷한 비율 순으로 정렬 후 최대 3개 표시
         results.sort((a,b) => Math.abs(a.normRatio - userRatio) - Math.abs(b.normRatio - userRatio));
-        
-        results.slice(0, 3).forEach(item => {
+        // 상자 크기에 따라 적절한 개수만 표시 (겹치지 않게 하기 위함)
+        results.slice(0, 12).forEach(item => {
+            if(!item.image) return;
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
-            
-            img.onload = () => {
-                // 상자 크기에 맞춰 이미지 랜덤 배치
-                const imgSize = Math.min(w, h) * 0.7;
-                img.style.width = imgSize + "px";
-                img.style.left = Math.random() * (w - imgSize) + "px";
-                img.style.top = Math.random() * (h - imgSize) + "px";
-                img.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
-                box.appendChild(img);
-            };
-            
-            img.onerror = () => {
-                console.log("이미지 파일 없음:", img.src);
-            };
+            img.onload = () => box.appendChild(img);
         });
     }
-
-    // 오래된 박스 투명도 조절 및 삭제
-    const allBoxes = document.querySelectorAll(".traceBox");
-    allBoxes.forEach((b, i) => {
-        b.style.opacity = Math.max(0.2, (i + 1) / allBoxes.length);
-    });
-    if(allBoxes.length > 10) allBoxes[0].remove();
+    const all = document.querySelectorAll(".traceBox");
+    if(all.length > 8) all[0].remove();
 }
 
-/* --- 4. 초기화 --- */
 window.addEventListener("keydown", (e) => {
-    if(e.code === "Space") {
-        document.querySelectorAll(".traceBox").forEach(el => el.remove());
-    }
+    if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
 });
 </script>
-
 </body>
 </html>
