@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Final Polish</title>
+<title>ORIGAMI ARCHIVE.V1</title>
 <style>
-    /* --- 디자인 최적화 스타일 --- */
+    /* --- 기초 디자인: 미니멀 & 화이트 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
-        background: #ffffff; /* 배경 완전한 화이트 */
+        background: #ffffff; 
         font-family: 'Courier New', Courier, monospace; 
         overflow: hidden; 
     }
@@ -26,13 +26,13 @@
         font-size:12px; font-weight:bold; padding:3px 8px; 
     }
 
-    /* 결과 박스 레이아웃 */
+    /* 결과 박스 레이아웃 (그림자 제거) */
     .traceBox { 
-        position:absolute; border:1.2px solid #000; background: #fff; 
+        position:absolute; border:1px solid #000; background: #fff; 
         z-index: 50; display: flex; flex-direction: column;
     }
     .box-header { 
-        height: 24px; border-bottom: 1.2px solid #000; 
+        height: 24px; border-bottom: 1px solid #000; 
         display: flex; align-items: center; justify-content: space-between; 
         padding: 0 10px; font-size: 10px; background: #fafafa; 
         font-weight: bold; letter-spacing: 0.5px;
@@ -55,14 +55,15 @@
         object-fit: contain; border: 1px solid #f0f0f0; 
     }
     
-    /* [수정] 아이템 이름: 굵기 줄이고 여백 확대 */
+    /* [수정] 아이템 이름: 밑줄 제거, 굵기 상향, 자간 축소 */
     .item-name { 
-        font-size: 10px; 
+        font-size: 11px; 
         margin-top: 10px; 
-        color: #333; 
+        color: #000; 
         text-transform: uppercase; 
-        font-weight: normal; /* 굵기 normal */
-        letter-spacing: 0.5px;
+        font-weight: 600; /* 조금 더 굵게 */
+        letter-spacing: -0.8px; /* 자간 좁게 */
+        text-decoration: none; /* 밑줄 제거 */
     }
 
     /* 상세 화면 모달 */
@@ -77,46 +78,39 @@
         object-fit: contain; pointer-events: none; 
     }
     
-    /* [수정] 상세 페이지 제목: 굵기 normal */
+    /* [수정] 상세 페이지 제목: 밑줄 제거, 굵기 상향, 자간 축소 */
     #detailName { 
-        font-size: 36px; font-weight: normal; 
-        margin-bottom: 40px; text-decoration: underline; 
-        letter-spacing: 4px; cursor: pointer; transition: color 0.2s; 
+        font-size: 38px; 
+        font-weight: 600; /* 조금 더 굵게 */
+        margin-bottom: 40px; 
+        text-decoration: none; /* 밑줄 제거 */
+        letter-spacing: -1.5px; /* 자간 좁게 */
+        cursor: pointer; 
+        transition: color 0.2s; 
     }
     #detailName:hover { color: #00ff00; }
 
     #detailPointBox { 
-        border: 1.5px solid #000; padding: 50px; 
+        border: 1px solid #000; padding: 50px; 
         display: flex; align-items: center; justify-content: center; 
         text-align: center; font-size: 16px; line-height: 2; 
         background: rgba(255, 255, 255, 0.95); 
         transition: all 0.5s ease; overflow-y: auto; 
-        min-width: 380px; min-height: 250px;
+        min-width: 400px; min-height: 260px;
         max-width: 80vw; max-height: 60vh;
     }
 
     #detailMeta { margin-top: 40px; font-size: 13px; color: #000; letter-spacing: 4px; font-weight: bold; }
-    #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 13px; cursor: pointer; border-bottom: 1.5px solid #000; font-weight: bold; }
+    #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #000; font-weight: bold; }
 
-    /* 조작 패널 최적화: 너비 확장 및 여백 */
+    /* 조작 패널 최적화 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:330px; 
-        background:#fff; padding:28px; border:1.5px solid #000; z-index:3000; 
+        background:#fff; padding:28px; border:1px solid #000; z-index:3000; 
     }
-    
-    .panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
-    #ui-title { 
-        font-size:13px; 
-        letter-spacing: 0.8px; 
-        font-weight: 900; 
-        text-transform: uppercase; 
-        padding-right: 15px; 
-    } 
-    .lang-switcher { 
-        font-size: 11px; font-weight: bold; cursor: pointer; 
-        border-bottom: 1.5px solid #000; padding-bottom: 2px; 
-        flex-shrink: 0; 
-    }
+    .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+    #ui-title { font-size: 14px; letter-spacing: -0.5px; font-weight: 900; text-transform: uppercase; } 
+    .lang-switcher { font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 1.5px solid #000; }
 
     #status { 
         font-size: 10px; color: #aaa; margin-bottom: 20px; 
@@ -144,7 +138,8 @@
 
 <div id="panel">
     <div class="panel-header">
-        <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1> <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
+        <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1> 
+        <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
     </div>
     <div id="status">SYNCED WITH GOOGLE SHEETS</div>
     <div style="margin-top:10px;">
@@ -154,11 +149,11 @@
 </div>
 
 <script>
+// [기존 스크립트 로직 동일 유지]
 let currentLang = 'KR';
 let currentActiveItem = null;
 
 const translations = {
-    // 한글 제목 및 상태 메시지 수정
     KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" },
     EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" }
 };
@@ -171,8 +166,7 @@ let db = [];
 let isDown = false;
 let startX, startY;
 
-// [해결] 쉼표 문제를 해결하는 정교한 CSV 파서
-function parseCSV(text) {
+function safeCSVParse(text) {
     const rows = [];
     const lines = text.split(/\r?\n/);
     lines.forEach(line => {
@@ -200,33 +194,12 @@ async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        const rows = parseCSV(csvText); // 보강된 파서 사용
+        const rows = safeCSVParse(csvText);
         const headers = rows[0].map(h => h.toLowerCase().trim());
-        
-        const idx = {
-            name: headers.indexOf('name'),
-            image: headers.indexOf('image'),
-            ratio: headers.indexOf('ratio'),
-            point: headers.indexOf('point'),
-            point_en: headers.indexOf('point_en'),
-            level: headers.indexOf('level'),
-            time: headers.indexOf('time'),
-            link: headers.indexOf('link')
-        };
-
+        const idx = { name: headers.indexOf('name'), image: headers.indexOf('image'), ratio: headers.indexOf('ratio'), point: headers.indexOf('point'), point_en: headers.indexOf('point_en'), level: headers.indexOf('level'), time: headers.indexOf('time'), link: headers.indexOf('link') };
         db = rows.slice(1).map(row => {
             let rVal = parseFloat(row[idx.ratio]);
-            return {
-                name: row[idx.name],
-                image: row[idx.image],
-                point_kr: row[idx.point],
-                point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point],
-                level: row[idx.level],
-                time: row[idx.time],
-                ratio: rVal,
-                normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal,
-                link: (idx.link !== -1) ? row[idx.link] : ""
-            };
+            return { name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], level: row[idx.level], time: row[idx.time], ratio: rVal, normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" };
         }).filter(item => !isNaN(item.normRatio) && item.image);
         updateUI();
     } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
@@ -244,7 +217,6 @@ function updateUI() {
     document.getElementById("ui-title").innerText = t.title;
     document.getElementById("ui-tol").innerText = t.tol;
     document.getElementById("closeDetail").innerText = t.close;
-    // 상태 메시지 숫자 제거
     document.getElementById("status").innerHTML = `● ${t.status}`;
 }
 
@@ -302,37 +274,19 @@ function refreshDetailContent() {
     const item = currentActiveItem;
     const nameEl = document.getElementById("detailName");
     nameEl.innerText = item.name;
-
-    if(item.link && item.link.startsWith('http')) {
-        nameEl.style.textDecoration = "underline";
-        nameEl.style.cursor = "pointer";
-    } else {
-        nameEl.style.textDecoration = "none";
-        nameEl.style.cursor = "default";
-    }
-
+    if(item.link && item.link.startsWith('http')) { nameEl.style.color = ""; nameEl.style.cursor = "pointer"; } 
+    else { nameEl.style.cursor = "default"; }
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
-
-    const baseSize = 400;
-    const r = item.ratio || 1;
+    const baseSize = 420; const r = item.ratio || 1;
     document.getElementById("detailPointBox").style.width = (r >= 1 ? baseSize : baseSize * r) + "px";
     document.getElementById("detailPointBox").style.height = (r >= 1 ? baseSize / r : baseSize) + "px";
-
-    let time = item.time || "0 MIN";
-    let level = item.level || "LEV.1";
-    if(currentLang === 'EN') {
-        time = time.toUpperCase().replace("분", " MIN");
-        level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY ");
-    }
-    document.getElementById("detailTime").innerText = time;
-    document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
+    let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
+    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
+    document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
 
-function goToLink() {
-    if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank');
-}
-
+function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
 window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
 </script>
