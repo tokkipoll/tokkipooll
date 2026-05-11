@@ -17,8 +17,8 @@ body{
   height:100vh;
   overflow:hidden;
   font-family:Arial, Helvetica, sans-serif;
-  background:#624141;
-  background-image: radial-gradient(#ddd 1px, transparent 1px);
+  background:#000000;
+  background-image:radial-gradient(#ddd 1px, transparent 1px);
   background-size:20px 20px;
   cursor:crosshair;
 }
@@ -30,7 +30,7 @@ body{
   right:25px;
   font-size:11px;
   font-weight:700;
-  z-index:999;
+  z-index:9999;
 }
 
 /* 슬라이더 */
@@ -42,11 +42,11 @@ body{
   display:flex;
   gap:14px;
   align-items:center;
-  background:rgba(255,255,255,.95);
+  background:rgba(255,255,255,.96);
   padding:12px 24px;
   border-radius:50px;
   box-shadow:0 10px 30px rgba(0,0,0,.08);
-  z-index:1000;
+  z-index:9999;
 }
 
 .panel span{
@@ -59,8 +59,10 @@ body{
   position:absolute;
   border:1px solid #333;
   background:#fff;
-  overflow:auto;
   box-shadow:0 10px 20px rgba(0,0,0,.08);
+  overflow:auto;
+  pointer-events:none;
+  z-index:5000;
 }
 
 .label{
@@ -84,6 +86,7 @@ body{
 .card{
   width:95px;
   text-align:center;
+  pointer-events:auto;
   cursor:pointer;
 }
 
@@ -107,7 +110,7 @@ body{
   display:none;
   justify-content:center;
   align-items:center;
-  z-index:2000;
+  z-index:10000;
 }
 
 .modal.active{
@@ -168,8 +171,6 @@ button{
 /* ---------------- 설정 ---------------- */
 const sheetId = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const gid = "0";
-
-/* 파일 경로 맞음 */
 const baseFolder = "assets/";
 
 let database = [];
@@ -250,76 +251,80 @@ slider.oninput = e=>{
 }
 
 /* ---------------- 드래그 ---------------- */
-let dragging=false;
+let dragging = false;
 let sx=0, sy=0;
 let box, label;
 
-document.onmousedown = e=>{
+window.addEventListener("mousedown", startDrag);
+window.addEventListener("mousemove", moveDrag);
+window.addEventListener("mouseup", endDrag);
+
+function startDrag(e){
 
   if(e.target.closest(".panel")) return;
   if(e.target.closest(".modal")) return;
+  if(e.button !== 0) return;
 
-  dragging=true;
+  dragging = true;
 
-  sx=e.clientX;
-  sy=e.clientY;
+  sx = e.clientX;
+  sy = e.clientY;
 
-  box=document.createElement("div");
-  box.className="box";
+  box = document.createElement("div");
+  box.className = "box";
 
-  label=document.createElement("div");
-  label.className="label";
+  label = document.createElement("div");
+  label.className = "label";
 
   box.appendChild(label);
 
-  box.style.left=sx+"px";
-  box.style.top=sy+"px";
+  box.style.left = sx + "px";
+  box.style.top = sy + "px";
 
   document.body.appendChild(box);
 }
 
-document.onmousemove = e=>{
+function moveDrag(e){
 
   coord.textContent = e.clientX + " / " + e.clientY;
 
   if(!dragging) return;
 
-  const w=Math.abs(e.clientX-sx);
-  const h=Math.abs(e.clientY-sy);
+  const w = Math.abs(e.clientX - sx);
+  const h = Math.abs(e.clientY - sy);
 
-  box.style.left=Math.min(sx,e.clientX)+"px";
-  box.style.top=Math.min(sy,e.clientY)+"px";
+  box.style.left = Math.min(sx,e.clientX) + "px";
+  box.style.top = Math.min(sy,e.clientY) + "px";
 
-  box.style.width=w+"px";
-  box.style.height=h+"px";
+  box.style.width = w + "px";
+  box.style.height = h + "px";
 
   if(w>0 && h>0){
     label.textContent = "1:" + (Math.max(w,h)/Math.min(w,h)).toFixed(2);
   }
 }
 
-/* ---------------- 결과 출력 ---------------- */
-document.onmouseup = e=>{
+function endDrag(){
 
   if(!dragging) return;
-  dragging=false;
+  dragging = false;
 
-  const w=parseInt(box.style.width);
-  const h=parseInt(box.style.height);
+  const w = parseInt(box.style.width);
+  const h = parseInt(box.style.height);
 
-  if(w<20 || h<20){
+  if(w < 20 || h < 20){
     box.remove();
     return;
   }
 
-  const userRatio = Math.max(w,h)/Math.min(w,h);
+  const userRatio = Math.max(w,h) / Math.min(w,h);
 
   const t = parseInt(slider.value);
 
   const range = 0.01 + (t/100)*0.7;
 
   const result = database.filter(item =>
-    Math.abs(item.ratio-userRatio) <= range
+    Math.abs(item.ratio - userRatio) <= range
   ).sort((a,b)=>
     Math.abs(a.ratio-userRatio) - Math.abs(b.ratio-userRatio)
   );
