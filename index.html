@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Final Polish</title>
+<title>Origami Archive - Final Version</title>
 <style>
-    /* --- 기존 디자인 스타일 유지 --- */
+    /* --- 디자인 스타일 유지 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     body { background: #fdfdfd; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
@@ -21,9 +21,8 @@
     .result-img { height: calc(100% - 15px); width: auto; object-fit: contain; border: 0.5px solid #eee; }
     .item-name { font-size: 8px; margin-top: 5px; color: #888; text-transform: uppercase; }
 
-    /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
-    #detailBgImg { position: absolute; max-width: 60vw; max-height: 60vh; opacity: 0.15; z-index: -1; filter: grayscale(1); object-fit: contain; pointer-events: none; }
+    #detailBgImg { position: absolute; max-width: 60vw; max-height: 60vh; opacity: 0.1; z-index: -1; filter: grayscale(1); object-fit: contain; pointer-events: none; }
     
     #detailName { font-size: 28px; font-weight: normal; margin-bottom: 30px; text-decoration: underline; letter-spacing: 2px; cursor: pointer; transition: color 0.2s; z-index: 10; }
     #detailName:hover { color: #00ff00; }
@@ -32,21 +31,17 @@
         border: 1px solid #000; padding: 40px; 
         display: flex; align-items: center; justify-content: center; 
         text-align: center; font-size: 14px; line-height: 1.8; 
-        background: rgba(255, 255, 255, 0.8); 
-        transition: width 0.5s, height 0.5s; 
-        overflow-y: auto; 
-        min-width: 320px; min-height: 200px;
-        max-width: 85vw; max-height: 65vh;
+        background: rgba(255, 255, 255, 0.9); 
+        overflow-y: auto; min-width: 350px; min-height: 220px;
+        max-width: 80vw; max-height: 60vh;
     }
 
     #detailMeta { margin-top: 30px; font-size: 11px; color: #000; letter-spacing: 3px; text-transform: uppercase; text-align: center; }
     #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #000; z-index: 100; }
 
-    /* 조작 패널 */
     #panel { position:fixed; left:30px; bottom:30px; width:220px; background:#fff; padding:25px; border:1px solid #000; z-index:3000; }
     #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
-    .lang-switcher { position: absolute; top: 25px; right: 25px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #000; padding-bottom: 2px; transition: 0.2s; }
-    .lang-switcher:hover { color: #00ff00; border-color: #00ff00; }
+    .lang-switcher { position: absolute; top: 25px; right: 25px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #000; padding-bottom: 2px; }
     #status { font-size:9px; color: #888; margin-bottom: 10px; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
@@ -86,35 +81,36 @@ const translations = {
 };
 
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+// [캐시 방지] URL 끝에 시간을 붙여 매번 새로운 데이터를 불러오게 합니다.
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
 
 let db = [];
 let isDown = false;
 let startX, startY;
 
-// [보강] 큰따옴표 안의 쉼표를 무시하고 파싱하는 정교한 CSV 파서
-function parseCSV(text) {
+// [쉼표 문제 해결] 인용구 내의 쉼표를 보호하며 파싱
+function safeCSVParse(text) {
     const rows = [];
     const lines = text.split(/\r?\n/);
-    for (let line of lines) {
-        if (!line.trim()) continue;
+    lines.forEach(line => {
+        if (!line.trim()) return;
         const row = [];
         let cur = "";
         let inQuotes = false;
         for (let i = 0; i < line.length; i++) {
-            let char = line[i];
-            if (char === '"') inQuotes = !inQuotes;
-            else if (char === ',' && !inQuotes) {
+            let c = line[i];
+            if (c === '"') inQuotes = !inQuotes;
+            else if (c === ',' && !inQuotes) {
                 row.push(cur.trim());
                 cur = "";
             } else {
-                cur += char;
+                cur += c;
             }
         }
         row.push(cur.trim());
         rows.push(row);
-    }
+    });
     return rows;
 }
 
@@ -122,10 +118,10 @@ async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        const rows = parseCSV(csvText); 
+        const rows = safeCSVParse(csvText);
         const headers = rows[0].map(h => h.toLowerCase().trim());
         
-        // 헤더 이름을 기반으로 정확한 인덱스 찾기
+        // [인덱스 자동 찾기] 열 위치가 바뀌어도 헤더 이름으로 찾음
         const idx = {
             name: headers.indexOf('name'),
             image: headers.indexOf('image'),
@@ -138,12 +134,13 @@ async function init() {
         };
 
         db = rows.slice(1).map(row => {
-            let rVal = parseFloat(row[idx.ratio]);
+            let rRaw = row[idx.ratio];
+            let rVal = parseFloat(rRaw);
             return {
                 name: row[idx.name],
                 image: row[idx.image],
                 point_kr: row[idx.point],
-                point_en: (idx.point_en !== -1) ? row[idx.point_en] : row[idx.point],
+                point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point],
                 level: row[idx.level],
                 time: row[idx.time],
                 ratio: rVal,
@@ -203,22 +200,15 @@ function createResultBox(x, y, w, h, userRatio) {
     box.className = "traceBox";
     Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
     stage.appendChild(box);
-
     const tVal = Number(document.getElementById("tol").value) / 100;
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
-
     if (results.length > 0) {
-        let itemsHTML = results.map(item => `
-            <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
-                <img src="${ASSET_PATH + item.image}" class="result-img">
-                <span class="item-name">${item.name}</span>
-            </div>
-        `).join('');
-
-        box.innerHTML = `
-            <div class="box-header"><span>RATIO: 1:${userRatio.toFixed(1)}</span><span>COUNT: ${results.length}</span></div>
-            <div class="image-list">${itemsHTML}</div>
-        `;
+        box.innerHTML = `<div class="box-header"><span>1:${userRatio.toFixed(1)}</span><span>${results.length}</span></div>
+            <div class="image-list">${results.map(item => `
+                <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
+                    <img src="${ASSET_PATH + item.image}" class="result-img">
+                    <span class="item-name">${item.name}</span>
+                </div>`).join('')}</div>`;
     }
 }
 
@@ -230,14 +220,9 @@ function openDetail(encoded) {
 
 function refreshDetailContent() {
     const item = currentActiveItem;
-    // 한영 번역 로직
-    const name = item.name;
-    const point = (currentLang === 'KR') ? item.point_kr : item.point_en;
-
     const nameEl = document.getElementById("detailName");
-    nameEl.innerText = name;
-    
-    // 링크 연결 여부 시각화
+    nameEl.innerText = item.name;
+
     if(item.link && item.link.startsWith('http')) {
         nameEl.style.textDecoration = "underline";
         nameEl.style.cursor = "pointer";
@@ -246,45 +231,32 @@ function refreshDetailContent() {
         nameEl.style.cursor = "default";
     }
 
+    // [번역] 현재 언어에 따라 설명 출력
+    document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
-    document.getElementById("detailPointBox").innerText = point;
 
     const baseSize = 400;
     const r = item.ratio || 1;
-    let targetW, targetH;
-    if (r >= 1) { targetW = baseSize; targetH = baseSize / r; } 
-    else { targetH = baseSize; targetW = baseSize * r; }
-    
-    document.getElementById("detailPointBox").style.width = Math.max(targetW, 320) + "px";
-    document.getElementById("detailPointBox").style.height = Math.max(targetH, 200) + "px";
+    document.getElementById("detailPointBox").style.width = (r >= 1 ? baseSize : baseSize * r) + "px";
+    document.getElementById("detailPointBox").style.height = (r >= 1 ? baseSize / r : baseSize) + "px";
 
-    // 시간/레벨 매칭
-    let displayTime = (item.time || "0분").toUpperCase();
-    let displayLevel = (item.level || "보통").toUpperCase();
-    
+    // 시간/레벨 한영 변환
+    let time = item.time || "0 MIN";
+    let level = item.level || "LEV.1";
     if(currentLang === 'EN') {
-        displayTime = displayTime.replace("분", " MIN");
-        displayLevel = displayLevel.replace("보통", "NORMAL").replace("쉬움", "EASY").replace("어려움", "HARD").replace("매우", "VERY ");
+        time = time.toUpperCase().replace("분", " MIN");
+        level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD");
     }
-
-    document.getElementById("detailTime").innerText = displayTime;
-    document.getElementById("detailLevel").innerText = displayLevel.includes('LEV') ? displayLevel : `LEV.${displayLevel}`;
+    document.getElementById("detailTime").innerText = time;
+    document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
 
 function goToLink() {
-    if (currentActiveItem && currentActiveItem.link && currentActiveItem.link.startsWith('http')) {
-        window.open(currentActiveItem.link, '_blank');
-    }
+    if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank');
 }
 
-function closeDetail() {
-    document.getElementById("detailView").style.display = "none";
-    currentActiveItem = null;
-}
-
-window.addEventListener("keydown", (e) => {
-    if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
-});
+function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
+window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
 </script>
 </body>
 </html>
