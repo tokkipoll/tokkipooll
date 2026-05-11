@@ -2,18 +2,16 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Linked Detail</title>
+<title>Origami Archive - Data Fix</title>
 <style>
-    /* --- 기존 디자인 스타일 유지 --- */
+    /* --- 디자인 스타일 유지 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     body { background: #fdfdfd; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 가이드 */
     #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-22px; left:0; background:#00ff00; color:#000; font-size:10px; font-weight:bold; padding:2px 6px; }
 
-    /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { height: 18px; border-bottom: 1px solid #000; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 8px; background: #fafafa; }
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 10px; gap: 15px; align-items: center; }
@@ -23,23 +21,26 @@
     .result-img { height: calc(100% - 15px); width: auto; object-fit: contain; border: 0.5px solid #eee; }
     .item-name { font-size: 8px; margin-top: 5px; color: #888; text-transform: uppercase; }
 
-    /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 60vw; max-height: 60vh; opacity: 0.15; z-index: -1; filter: grayscale(1); object-fit: contain; pointer-events: none; }
     
-    /* 제목: 링크가 있을 때의 스타일 */
-    #detailName { 
-        font-size: 28px; font-weight: normal; margin-bottom: 30px; 
-        text-decoration: underline; letter-spacing: 2px; 
-        cursor: pointer; transition: color 0.2s;
-    }
+    #detailName { font-size: 28px; font-weight: normal; margin-bottom: 30px; text-decoration: underline; letter-spacing: 2px; cursor: pointer; transition: color 0.2s; z-index: 10; }
     #detailName:hover { color: #00ff00; }
 
-    #detailPointBox { border: 1px solid #000; padding: 40px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.8; background: rgba(255, 255, 255, 0.8); transition: all 0.5s ease; overflow: hidden; }
-    #detailMeta { margin-top: 30px; font-size: 11px; color: #000; letter-spacing: 3px; text-transform: uppercase; }
-    #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #000; }
+    #detailPointBox { 
+        border: 1px solid #000; padding: 40px; 
+        display: flex; align-items: center; justify-content: center; 
+        text-align: center; font-size: 14px; line-height: 1.8; 
+        background: rgba(255, 255, 255, 0.8); 
+        transition: width 0.5s, height 0.5s; 
+        overflow-y: auto; 
+        min-width: 320px; min-height: 200px;
+        max-width: 85vw; max-height: 65vh;
+    }
 
-    /* 조작 패널 */
+    #detailMeta { margin-top: 30px; font-size: 11px; color: #000; letter-spacing: 3px; text-transform: uppercase; text-align: center; }
+    #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #000; z-index: 100; }
+
     #panel { position:fixed; left:30px; bottom:30px; width:220px; background:#fff; padding:25px; border:1px solid #000; z-index:3000; }
     #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
     .lang-switcher { position: absolute; top: 25px; right: 25px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #000; padding-bottom: 2px; }
@@ -73,7 +74,6 @@
 </div>
 
 <script>
-/* --- 다국어 설정 --- */
 let currentLang = 'KR';
 let currentActiveItem = null;
 
@@ -90,17 +90,27 @@ let db = [];
 let isDown = false;
 let startX, startY;
 
+// [핵심] CSV의 쉼표 문제를 해결하는 정교한 파싱 함수
+function parseCSV(text) {
+    const rows = [];
+    const lines = text.split(/\r?\n/);
+    lines.forEach(line => {
+        // 큰따옴표 안의 쉼표는 무시하고 나누는 정규표현식
+        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        if (matches) {
+            rows.push(matches.map(val => val.replace(/^"|"$/g, "").trim()));
+        }
+    });
+    return rows;
+}
+
 async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        const rows = csvText.split('\n').map(row => {
-            // CSV 파싱 시 쉼표 처리 (간단한 파싱)
-            return row.split(',').map(cell => cell.trim());
-        });
+        const rows = parseCSV(csvText); // 보강된 파서 사용
         const headers = rows[0].map(h => h.toLowerCase());
         
-        // 시트 열 인덱스 찾기
         const idx = {
             name: headers.indexOf('name'),
             name_en: headers.indexOf('name_en'),
@@ -110,7 +120,7 @@ async function init() {
             point_en: headers.indexOf('point_en'),
             level: headers.indexOf('level'),
             time: headers.indexOf('time'),
-            link: 8 // I열은 0부터 시작했을 때 8번째 인덱스입니다.
+            link: headers.indexOf('link')
         };
 
         db = rows.slice(1).map(row => {
@@ -125,7 +135,7 @@ async function init() {
                 time: row[idx.time],
                 ratio: rVal,
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal,
-                link: row[idx.link] || "" // I열 링크 저장
+                link: row[idx.link] || ""
             };
         }).filter(item => !isNaN(item.normRatio) && item.image);
         updateUI();
@@ -212,8 +222,7 @@ function refreshDetailContent() {
     const nameEl = document.getElementById("detailName");
     nameEl.innerText = name;
     
-    // 링크 존재 여부에 따른 스타일 처리
-    if(item.link && item.link !== "") {
+    if(item.link && item.link.startsWith('http')) {
         nameEl.style.textDecoration = "underline";
         nameEl.style.cursor = "pointer";
     } else {
@@ -224,25 +233,34 @@ function refreshDetailContent() {
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
     document.getElementById("detailPointBox").innerText = point;
 
-    // 비율 박스 조정
+    // 박스 크기 계산
     const baseSize = 400;
     const r = item.ratio || 1;
-    if (r >= 1) {
-        document.getElementById("detailPointBox").style.width = baseSize + "px";
-        document.getElementById("detailPointBox").style.height = (baseSize / r) + "px";
-    } else {
-        document.getElementById("detailPointBox").style.height = baseSize + "px";
-        document.getElementById("detailPointBox").style.width = (baseSize * r) + "px";
+    let targetW, targetH;
+    if (r >= 1) { targetW = baseSize; targetH = baseSize / r; } 
+    else { targetH = baseSize; targetW = baseSize * r; }
+    
+    document.getElementById("detailPointBox").style.width = Math.max(targetW, 320) + "px";
+    document.getElementById("detailPointBox").style.height = Math.max(targetH, 200) + "px";
+
+    // 시간과 레벨 정확히 매칭
+    const timeText = (item.time || "0 MIN").toUpperCase();
+    const levelText = (item.level || "LEV.1").toUpperCase();
+    
+    let displayTime = timeText;
+    let displayLevel = levelText;
+
+    if(currentLang === 'EN') {
+        displayTime = displayTime.replace("분", " MIN");
+        displayLevel = displayLevel.replace("보통", "NORMAL").replace("쉬움", "EASY").replace("어려움", "HARD");
     }
 
-    const timeVal = item.time ? item.time.replace(/[^0-9]/g, "") : "0";
-    document.getElementById("detailTime").innerText = `${timeVal}MIN`;
-    document.getElementById("detailLevel").innerText = `LEV.${item.level || 1}`;
+    document.getElementById("detailTime").innerText = displayTime;
+    document.getElementById("detailLevel").innerText = displayLevel.includes('LEV') ? displayLevel : `LEV.${displayLevel}`;
 }
 
-// [추가] 이름 클릭 시 링크로 이동하는 함수
 function goToLink() {
-    if (currentActiveItem && currentActiveItem.link && currentActiveItem.link !== "") {
+    if (currentActiveItem && currentActiveItem.link && currentActiveItem.link.startsWith('http')) {
         window.open(currentActiveItem.link, '_blank');
     }
 }
