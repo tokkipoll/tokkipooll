@@ -1,235 +1,412 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll - Detailed Archive</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Origami Ratio Search Lab</title>
+
 <style>
-  /* 🌟 기본 캔버스 스타일 */
-  body {
-    margin: 0; padding: 0; width: 100vw; height: 100vh;
-    background-color: #ffffff; 
-    background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
-    background-size: 20px 20px;
-    overflow: hidden; user-select: none; cursor: crosshair; 
-    font-family: 'Pretendard', sans-serif;
-  }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-  .coord-tracker { position: fixed; top: 20px; right: 25px; font-size: 12px; color: #333; font-weight: 700; z-index: 100; }
-  
-  .control-panel { 
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-    display: flex; align-items: center; gap: 20px; z-index: 1000; 
-    background: rgba(255, 255, 255, 0.9); padding: 12px 30px; border-radius: 40px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;
-  }
-  .tol-value { font-size: 14px; font-weight: 800; color: #3b48ff; width: 45px; text-align: center; }
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background:#ececec;
+    overflow:hidden;
+    color:#222;
+}
 
-  /* 드래그 박스 */
-  .drag-box { position: absolute; background-color: rgba(255, 255, 255, 0.1); border: 0.5px solid rgba(59, 72, 255, 0.3); box-sizing: border-box; }
-  .drag-box.active-result { border: 1px solid #333; background-color: #fff; z-index: 10; }
-  .dim-label { position: absolute; top: -18px; left: 0; font-size: 9px; font-weight: 700; color: #3b48ff; }
+/* 메인 공간 */
+#stage{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    cursor:crosshair;
+}
 
-  .content-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; overflow: hidden; }
-  .item-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; max-width: 90%; }
-  .item-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
-  .item-card .name { font-size: 10px; font-weight: 800; margin-top: 5px; text-transform: lowercase; }
+/* 실시간 드래그 박스 */
+#dragBox{
+    position:absolute;
+    border:1px solid rgba(0,0,0,0.55);
+    background:rgba(255,255,255,0.06);
+    display:none;
+    pointer-events:none;
+}
 
-  /* 🌟 상세 페이지 (모달) 스타일 - 피그마 디자인 반영 */
-  #detailView {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: #fff; background-size: cover; background-position: center;
-    display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
-    transition: opacity 0.3s ease;
-  }
-  #detailView.active { display: flex; }
+/* 남는 흔적 박스 */
+.trace{
+    position:absolute;
+    border:1px solid rgba(0,0,0,0.32);
+    pointer-events:none;
+}
 
-  /* 중앙 설명 박스 (드래그한 비율 유지) */
-  .ratio-point-box {
-    border: 1px solid #000; background-color: rgba(255, 255, 255, 0.9);
-    padding: 40px; box-sizing: border-box; text-align: center;
-    display: flex; align-items: center; justify-content: center;
-    max-width: 80vw; max-height: 60vh;
-  }
-  .point-text { font-size: 16px; font-weight: 700; color: #000; line-height: 1.6; word-break: keep-all; margin: 0; }
+/* 비율 표시 */
+#ratioTag{
+    position:absolute;
+    top:-24px;
+    left:0;
+    font-size:11px;
+    padding:3px 7px;
+    background:#111;
+    color:#fff;
+    letter-spacing:.3px;
+    white-space:nowrap;
+}
 
-  /* 하단 정보 섹션 */
-  .bottom-info { position: absolute; bottom: 80px; text-align: center; width: 100%; }
-  .detail-name { font-size: 42px; font-weight: 800; color: #000; margin: 0; text-transform: lowercase; }
-  .detail-meta { font-size: 14px; font-weight: 600; color: #555; margin-top: 5px; }
-  .detail-meta span { margin: 0 15px; }
+/* 좌표 */
+#coords{
+    position:fixed;
+    top:18px;
+    right:18px;
+    font-size:12px;
+    background:rgba(255,255,255,0.9);
+    padding:8px 10px;
+    border:1px solid rgba(0,0,0,0.15);
+}
 
-  /* 버튼들 */
-  .nav-btn { position: absolute; bottom: 30px; font-size: 12px; font-weight: 700; color: #000; cursor: pointer; text-decoration: none; border: none; background: none; }
-  .btn-home { left: 40px; }
-  .btn-link { right: 40px; }
+/* 하단 컨트롤 */
+#panel{
+    position:fixed;
+    left:18px;
+    bottom:18px;
+    width:260px;
+    background:rgba(255,255,255,0.94);
+    border:1px solid rgba(0,0,0,0.12);
+    padding:14px;
+}
+
+#panel h1{
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+#panel label{
+    font-size:12px;
+    display:block;
+    margin-bottom:6px;
+}
+
+#tol{
+    width:100%;
+}
+
+#meta{
+    margin-top:10px;
+    font-size:11px;
+    line-height:1.5;
+    color:#555;
+}
+
+/* 결과 영역 */
+#results{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    width:330px;
+    max-height:68vh;
+    overflow-y:auto;
+    background:rgba(255,255,255,0.96);
+    border:1px solid rgba(0,0,0,0.12);
+    padding:14px;
+}
+
+#results h2{
+    font-size:14px;
+    margin-bottom:12px;
+}
+
+.card{
+    margin-bottom:16px;
+    padding-bottom:14px;
+    border-bottom:1px solid rgba(0,0,0,0.08);
+}
+
+.card img{
+    width:100%;
+    display:block;
+    margin-bottom:8px;
+    background:#f2f2f2;
+}
+
+.card .name{
+    font-size:13px;
+    font-weight:700;
+}
+
+.card .sub{
+    font-size:11px;
+    color:#666;
+    margin-top:4px;
+}
+
+.empty{
+    font-size:12px;
+    color:#777;
+    line-height:1.5;
+}
 </style>
 </head>
+
 <body>
 
-<div id="coordTracker" class="coord-tracker">000 / 000</div>
-
-<div class="control-panel">
-  <label style="font-size:11px; font-weight:800; color:#aaa;">TOLERANCE</label>
-  <input type="range" id="toleranceSlider" min="1.0" max="2.0" step="0.01" value="1.2">
-  <span id="tolValue" class="tol-value">20%</span>
+<div id="stage">
+    <div id="dragBox">
+        <div id="ratioTag">1 : 1.00</div>
+    </div>
 </div>
 
-<div id="detailView">
-  <div id="ratioBox" class="ratio-point-box">
-    <p id="pointText" class="point-text"></p>
-  </div>
-  
-  <div class="bottom-info">
-    <h1 id="detailName" class="detail-name"></h1>
-    <div class="detail-meta">
-      <span id="detailTime"></span>
-      <span id="detailLevel"></span>
-    </div>
-  </div>
+<div id="coords">X:0 Y:0</div>
 
-  <button class="nav-btn btn-home" onclick="closeDetail()">홈버튼</button>
-  <a id="detailLink" href="#" target="_blank" class="nav-btn btn-link">도안 참고 링크</a>
+<div id="panel">
+    <h1>Origami Ratio Search</h1>
+
+    <label>
+        Tolerance :
+        <span id="tolText">20%</span>
+    </label>
+    <input type="range" min="0" max="100" value="20" id="tol">
+
+    <div id="meta">
+        Drag empty space to draw a ratio box.<br>
+        Spacebar = clear traces<br>
+        Lower tolerance = stricter search
+    </div>
+</div>
+
+<div id="results">
+    <h2>Recommended</h2>
+    <div id="list" class="empty">
+        Draw a rectangle to begin searching.
+    </div>
 </div>
 
 <script>
-  const sheetId = '1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
-  const gid = '59083326'; 
-  const baseFolder = 'foldingpapers/assets/'; 
-  let database = [];
+/* ==========================
+   구글 시트 JSON 주소
+========================== */
+const SHEET_URL =
+"https://opensheet.elk.sh/1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60/Sheet1";
 
-  async function init() {
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-    try {
-      const res = await fetch(url);
-      const text = await res.text();
-      const rows = text.split('\n').slice(1);
-      
-      database = rows.map(row => {
-        const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-        if (cols.length >= 5) {
-          const rawRatio = cols[4];
-          let val = 1;
-          const match = rawRatio.match(/^(\d+(\.\d+)?)/);
-          if (match) {
-            if (rawRatio.includes(':')) {
-              const p = rawRatio.split(':');
-              val = parseFloat(p[0]) / parseFloat(p[1]);
-            } else { val = parseFloat(match[1]); }
-          }
-          return { 
-            name: cols[0], 
-            point: cols[1], // B열: 설명
-            image: cols[2], // C열: 파일명
-            ratio: val >= 1 ? val : 1 / val,
-            level: cols[6], // G열: 레벨
-            time: cols[7],  // H열: 시간
-            link: cols[10]  // K열: 링크 (필요시)
-          };
-        }
-        return null;
-      }).filter(d => d !== null);
-    } catch (e) { console.error(e); }
-  }
-  init();
+/* ==========================
+   상태값
+========================== */
+let db = [];
+let isDown = false;
+let startX = 0;
+let startY = 0;
 
-  const slider = document.getElementById('toleranceSlider');
-  const tolText = document.getElementById('tolValue');
-  slider.oninput = (e) => { tolText.textContent = Math.round((parseFloat(e.target.value) - 1) * 100) + "%"; };
+/* ==========================
+   요소
+========================== */
+const stage = document.getElementById("stage");
+const dragBox = document.getElementById("dragBox");
+const ratioTag = document.getElementById("ratioTag");
+const coords = document.getElementById("coords");
+const tol = document.getElementById("tol");
+const tolText = document.getElementById("tolText");
+const list = document.getElementById("list");
 
-  let isDragging = false;
-  let startX, startY, currentBox, label;
+/* ==========================
+   시트 불러오기
+========================== */
+fetch(SHEET_URL)
+.then(r => r.json())
+.then(data => {
+    db = data;
+})
+.catch(() => {
+    list.innerHTML = `<div class="empty">Google Sheet load failed.</div>`;
+});
 
-  document.onmousedown = (e) => {
-    if (e.target.closest('.control-panel') || e.target.closest('#detailView')) return;
-    isDragging = true;
-    startX = e.clientX; startY = e.clientY;
-    currentBox = document.createElement('div');
-    currentBox.className = 'drag-box';
-    label = document.createElement('div');
-    label.className = 'dim-label';
-    currentBox.appendChild(label);
-    currentBox.style.left = startX + 'px'; currentBox.style.top = startY + 'px';
-    document.body.appendChild(currentBox);
-  };
+/* ==========================
+   Tolerance 표시
+========================== */
+tol.addEventListener("input", () => {
+    tolText.textContent = tol.value + "%";
+});
 
-  document.onmousemove = (e) => {
-    document.getElementById('coordTracker').textContent = `${e.clientX} / ${e.clientY}`;
-    if (!isDragging) return;
-    let w = Math.abs(e.clientX - startX);
-    let h = Math.abs(e.clientY - startY);
-    currentBox.style.width = w + 'px'; currentBox.style.height = h + 'px';
-    currentBox.style.left = Math.min(e.clientX, startX) + 'px';
-    currentBox.style.top = Math.min(e.clientY, startY) + 'px';
-    if (w > 0 && h > 0) label.textContent = `1:${(Math.max(w, h) / Math.min(w, h)).toFixed(2)}`;
-  };
+/* ==========================
+   마우스 다운
+========================== */
+stage.addEventListener("mousedown", (e) => {
+    isDown = true;
 
-  document.onmouseup = () => {
-    if (!isDragging) return;
-    isDragging = false;
-    const w = parseInt(currentBox.style.width);
-    const h = parseInt(currentBox.style.height);
+    startX = e.clientX;
+    startY = e.clientY;
 
-    if (w > 30 && h > 30) {
-      const userRatio = Math.max(w, h) / Math.min(w, h);
-      const tol = parseFloat(slider.value);
-      const matched = database.filter(item => {
-        const diff = Math.max(userRatio / item.ratio, item.ratio / userRatio);
-        return diff <= tol;
-      }).sort((a, b) => {
-        const diffA = Math.max(userRatio / a.ratio, a.ratio / userRatio);
-        const diffB = Math.max(userRatio / b.ratio, b.ratio / userRatio);
-        return diffA - diffB;
-      });
+    dragBox.style.display = "block";
+    dragBox.style.left = startX + "px";
+    dragBox.style.top = startY + "px";
+    dragBox.style.width = "0px";
+    dragBox.style.height = "0px";
+});
 
-      if (matched.length > 0) {
-        currentBox.classList.add('active-result');
-        const item = matched[0];
-        // 드래그한 비율 정보를 박스에 데이터로 저장
-        currentBox.setAttribute('data-w', w);
-        currentBox.setAttribute('data-h', h);
+/* ==========================
+   마우스 이동
+========================== */
+stage.addEventListener("mousemove", (e) => {
 
-        currentBox.innerHTML = `
-          <div class="content-wrapper" onclick="openDetail('${item.name}', ${w}, ${h})">
-            <div class="item-card">
-              <img src="${baseFolder}${item.image}">
-              <div class="name">${item.name}</div>
+    coords.innerHTML = `X:${e.clientX} Y:${e.clientY}`;
+
+    if(!isDown) return;
+
+    const x = Math.min(startX, e.clientX);
+    const y = Math.min(startY, e.clientY);
+    const w = Math.abs(e.clientX - startX);
+    const h = Math.abs(e.clientY - startY);
+
+    dragBox.style.left = x + "px";
+    dragBox.style.top = y + "px";
+    dragBox.style.width = w + "px";
+    dragBox.style.height = h + "px";
+
+    if(h > 3){
+        const ratio = (w / h).toFixed(2);
+        ratioTag.innerHTML = `1 : ${ratio}`;
+    }
+});
+
+/* ==========================
+   마우스 업
+========================== */
+stage.addEventListener("mouseup", (e) => {
+
+    if(!isDown) return;
+    isDown = false;
+
+    const x = Math.min(startX, e.clientX);
+    const y = Math.min(startY, e.clientY);
+    const w = Math.abs(e.clientX - startX);
+    const h = Math.abs(e.clientY - startY);
+
+    dragBox.style.display = "none";
+
+    if(w < 8 || h < 8) return;
+
+    /* 흔적 남기기 */
+    createTrace(x,y,w,h);
+
+    /* 검색 */
+    const ratio = w / h;
+    searchRatio(ratio);
+});
+
+/* ==========================
+   흔적 생성
+========================== */
+function createTrace(x,y,w,h){
+
+    const div = document.createElement("div");
+    div.className = "trace";
+
+    div.style.left = x + "px";
+    div.style.top = y + "px";
+    div.style.width = w + "px";
+    div.style.height = h + "px";
+
+    stage.appendChild(div);
+
+    fadeTrace();
+}
+
+/* ==========================
+   오래된 흔적 흐리기
+========================== */
+function fadeTrace(){
+
+    const traces = document.querySelectorAll(".trace");
+
+    traces.forEach((box, i) => {
+        const total = traces.length;
+        const opacity = Math.max(0.12, (i + 1) / total);
+        box.style.opacity = opacity;
+    });
+
+    if(traces.length > 22){
+        traces[0].remove();
+    }
+}
+
+/* ==========================
+   검색 로직
+========================== */
+function searchRatio(userRatio){
+
+    if(!db.length){
+        list.innerHTML = `<div class="empty">Database loading...</div>`;
+        return;
+    }
+
+    const t = Number(tol.value) / 100;
+
+    let result = db.filter(item => {
+
+        const r = parseFloat(item.ratio);
+
+        if(isNaN(r)) return false;
+
+        const diff = Math.abs(r - userRatio);
+
+        return diff <= userRatio * t;
+    });
+
+    result.sort((a,b)=>{
+        return Math.abs(a.ratio-userRatio) - Math.abs(b.ratio-userRatio);
+    });
+
+    render(result.slice(0,8), userRatio);
+}
+
+/* ==========================
+   렌더링
+========================== */
+function render(items, userRatio){
+
+    if(items.length === 0){
+        list.innerHTML = `
+        <div class="empty">
+        No result found.<br><br>
+        Ratio : ${userRatio.toFixed(2)}<br>
+        Increase tolerance.
+        </div>`;
+        return;
+    }
+
+    list.innerHTML = "";
+
+    items.forEach(item => {
+
+        const img = item.image
+            ? `<img src="${item.image}" alt="">`
+            : "";
+
+        const html = `
+        <div class="card">
+            ${img}
+            <div class="name">${item.name || "Untitled"}</div>
+            <div class="sub">
+                ratio : ${item.ratio}
             </div>
-          </div>
+        </div>
         `;
-      } else { currentBox.remove(); }
-    } else { currentBox.remove(); }
-  };
 
-  // 🌟 상세 페이지 열기 로직
-  function openDetail(name, w, h) {
-    const item = database.find(d => d.name === name);
-    if (!item) return;
+        list.innerHTML += html;
+    });
+}
 
-    const detailView = document.getElementById('detailView');
-    const ratioBox = document.getElementById('ratioBox');
-    
-    // 배경 이미지 설정
-    detailView.style.backgroundImage = `url('${baseFolder}${item.image}')`;
-    
-    // 드래그했던 비율 박스 크기 조절 (화면 크기에 맞춰 스케일링)
-    const scale = Math.min(600 / Math.max(w, h), 1);
-    ratioBox.style.width = (w * scale) + "px";
-    ratioBox.style.height = (h * scale) + "px";
-
-    // 데이터 채우기
-    document.getElementById('pointText').textContent = item.point;
-    document.getElementById('detailName').textContent = item.name;
-    document.getElementById('detailTime').textContent = item.time;
-    document.getElementById('detailLevel').textContent = item.level;
-    document.getElementById('detailLink').href = item.link || "#";
-
-    detailView.classList.add('active');
-  }
-
-  function closeDetail() {
-    document.getElementById('detailView').classList.remove('active');
-  }
+/* ==========================
+   스페이스바 = 흔적 삭제
+========================== */
+window.addEventListener("keydown",(e)=>{
+    if(e.code === "Space"){
+        document.querySelectorAll(".trace").forEach(el=>el.remove());
+    }
+});
 </script>
+
 </body>
 </html>
