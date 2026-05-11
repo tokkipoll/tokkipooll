@@ -3,83 +3,364 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tokkipooll Final System</title>
+<title>tokkipooll Ratio Finder</title>
+
 <style>
-body{margin:0;width:100vw;height:100vh;overflow:hidden;font-family:sans-serif;background:#fff;background-image:radial-gradient(#e5e5e5 1px,transparent 1px);background-size:20px 20px;cursor:crosshair}
-.coord{position:fixed;top:16px;right:20px;font-size:11px;font-weight:700}
-.panel{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:16px;align-items:center;padding:12px 24px;background:rgba(255,255,255,.95);border:1px solid #eee;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.08);z-index:1000}
-.box{position:absolute;border:1px solid #372222;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.08);overflow:auto}
-.label{position:absolute;top:-18px;left:0;font-size:10px;color:#3b48ff;font-weight:700}
-.wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;justify-content:center}
-.card{width:110px;text-align:center;cursor:pointer}
-.card img{width:100%;height:80px;object-fit:contain}
-.name{font-size:10px;font-weight:700}
-.modal{position:fixed;inset:0;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:center;z-index:2000}
-.modal.on{display:flex}.inner{text-align:center;max-width:520px;padding:30px}.inner img{max-width:260px;max-height:260px}
-button{padding:10px 16px;border:1px solid #222;background:#fff;cursor:pointer}
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+  font-family:Arial, Helvetica, sans-serif;
+  background:#624141;
+  background-image: radial-gradient(#ddd 1px, transparent 1px);
+  background-size:20px 20px;
+  cursor:crosshair;
+}
+
+/* 좌표 */
+.coord{
+  position:fixed;
+  top:20px;
+  right:25px;
+  font-size:11px;
+  font-weight:700;
+  z-index:999;
+}
+
+/* 슬라이더 */
+.panel{
+  position:fixed;
+  bottom:25px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:14px;
+  align-items:center;
+  background:rgba(255,255,255,.95);
+  padding:12px 24px;
+  border-radius:50px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  z-index:1000;
+}
+
+.panel span{
+  font-size:14px;
+  font-weight:700;
+}
+
+/* 드래그 박스 */
+.box{
+  position:absolute;
+  border:1px solid #333;
+  background:#fff;
+  overflow:auto;
+  box-shadow:0 10px 20px rgba(0,0,0,.08);
+}
+
+.label{
+  position:absolute;
+  top:-18px;
+  left:0;
+  font-size:10px;
+  font-weight:700;
+  color:#3b48ff;
+}
+
+/* 결과 카드 */
+.wrap{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:12px;
+  justify-content:center;
+}
+
+.card{
+  width:95px;
+  text-align:center;
+  cursor:pointer;
+}
+
+.card img{
+  width:95px;
+  height:70px;
+  object-fit:contain;
+}
+
+.name{
+  font-size:10px;
+  font-weight:700;
+  margin-top:4px;
+}
+
+/* 모달 */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.97);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:2000;
+}
+
+.modal.active{
+  display:flex;
+}
+
+.inner{
+  text-align:center;
+  max-width:500px;
+}
+
+.inner img{
+  max-width:260px;
+  max-height:260px;
+}
+
+.inner h2{
+  margin-top:20px;
+}
+
+.inner p{
+  margin-top:10px;
+  color:#666;
+  line-height:1.6;
+}
+
+button{
+  margin-top:20px;
+  padding:10px 18px;
+  border:1px solid #333;
+  background:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
 </style>
 </head>
+
 <body>
-<div class='coord' id='coord'>0 / 0</div>
-<div class='panel'>Tolerance <input id='slider' type='range' min='0' max='100' value='50'><span id='val'>50%</span></div>
-<div class='modal' id='modal'><div class='inner'><img id='mimg'><h2 id='mt'></h2><p id='mp'></p><button onclick="modal.classList.remove('on')">CLOSE</button></div></div>
+
+<div class="coord" id="coord">0 / 0</div>
+
+<div class="panel">
+  <small>Tolerance</small>
+  <input type="range" min="0" max="100" value="40" id="slider">
+  <span id="val">40%</span>
+</div>
+
+<div class="modal" id="modal">
+  <div class="inner">
+    <img id="mimg">
+    <h2 id="mtitle"></h2>
+    <p id="mpoint"></p>
+    <button onclick="closeModal()">CLOSE</button>
+  </div>
+</div>
+
 <script>
-const sheetId='1--r68ndYvKgPbaBpPE6ovJHm5ekD9S2It0EGw3wk2Us';
-const gid='59083326';
-const baseFolder='foldingpapers/assets/';
-let database=[];
-const coord=document.getElementById('coord');
-const slider=document.getElementById('slider');
-const val=document.getElementById('val');
-const modal=document.getElementById('modal');
-slider.oninput=e=>val.textContent=e.target.value+'%';
+/* ---------------- 설정 ---------------- */
+const sheetId = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
+const gid = "0";
+
+/* 파일 경로 맞음 */
+const baseFolder = "assets/";
+
+let database = [];
+
+/* ---------------- CSV 로드 ---------------- */
 async function init(){
- const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
- const res=await fetch(url); const text=await res.text();
- const rows=text.trim().split(/\r?\n/).slice(1);
- database=rows.map(row=>{
-  const cols=row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v=>v.replace(/^"|"$/g,'').trim())||[];
-  if(cols.length<5) return null;
-  let raw=(cols[4]||'1').replace(/\s/g,'').replace(/：/g,':');
-  let ratio=1;
-  if(raw.includes(':')){const p=raw.split(':').map(Number); if(p[0]&&p[1]) ratio=p[0]/p[1];}
-  else ratio=parseFloat(raw)||1;
-  ratio=ratio>=1?ratio:1/ratio;
-  return {name:cols[0],image:cols[2],ratio,point:cols[8]||''};
- }).filter(Boolean);
- console.log(database);
+
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  const rows = text.trim().split(/\r?\n/).map(row =>
+    row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v =>
+      v.replace(/^"|"$/g,'').trim()
+    ) || []
+  );
+
+  const header = rows[0].map(v=>v.toLowerCase());
+
+  const nameCol  = header.findIndex(v=>v.includes("name"));
+  const imgCol   = header.findIndex(v=>v.includes("image"));
+  const ratioCol = header.findIndex(v=>v.includes("ratio"));
+  const pointCol = header.findIndex(v=>v.includes("point"));
+
+  database = rows.slice(1).map(cols=>{
+
+    const ratio = normalizeRatio(cols[ratioCol]);
+
+    if(!cols[nameCol] || !ratio) return null;
+
+    return {
+      name: cols[nameCol],
+      image: cols[imgCol],
+      ratio: ratio,
+      point: cols[pointCol] || ""
+    }
+
+  }).filter(Boolean);
+
+  console.log(database);
 }
+
+/* ---------------- ratio 정리 ---------------- */
+function normalizeRatio(raw){
+
+  if(!raw) return null;
+
+  raw = String(raw)
+    .replace(/\s/g,'')
+    .replace(/：/g,':')
+    .replace(',', '.');
+
+  let ratio;
+
+  if(raw.includes(':')){
+    const [a,b] = raw.split(':').map(Number);
+    if(!a || !b) return null;
+    ratio = a/b;
+  }else{
+    ratio = parseFloat(raw);
+  }
+
+  if(!ratio) return null;
+
+  return ratio >= 1 ? ratio : 1/ratio;
+}
+
 init();
-let down=false,sx=0,sy=0,box,label;
-document.onmousedown=e=>{
- if(e.target.closest('.panel')||e.target.closest('.modal')) return;
- down=true; sx=e.clientX; sy=e.clientY;
- box=document.createElement('div'); box.className='box';
- label=document.createElement('div'); label.className='label'; box.appendChild(label);
- box.style.left=sx+'px'; box.style.top=sy+'px'; document.body.appendChild(box);
-};
-document.onmousemove=e=>{
- coord.textContent=e.clientX+' / '+e.clientY;
- if(!down) return;
- const w=Math.abs(e.clientX-sx), h=Math.abs(e.clientY-sy);
- box.style.left=Math.min(e.clientX,sx)+'px'; box.style.top=Math.min(e.clientY,sy)+'px';
- box.style.width=w+'px'; box.style.height=h+'px';
- if(w>0&&h>0) label.textContent='1:'+(Math.max(w,h)/Math.min(w,h)).toFixed(2);
-};
-document.onmouseup=e=>{
- if(!down) return; down=false;
- const w=parseInt(box.style.width), h=parseInt(box.style.height);
- if(w<20||h<20){box.remove(); return;}
- const userRatio=Math.max(w,h)/Math.min(w,h);
- const matched=database.map(item=>({...item,diff:Math.abs(item.ratio-userRatio)})).sort((a,b)=>a.diff-b.diff);
- const t=parseInt(slider.value);
- let result=[];
- if(t===0) result=matched.filter(i=>i.diff<0.03).slice(0,12);
- else {const count=Math.max(1,Math.round((t/100)*matched.length)); result=matched.slice(0,Math.min(count,12));}
- if(!result.length){box.remove(); return;}
- box.innerHTML=`<div class='wrap'>${result.map(i=>`<div class='card' onclick="showPop('${encodeURIComponent(i.name)}')"><img src='${baseFolder}${i.image}'><div class='name'>${i.name}</div></div>`).join('')}</div>`;
-};
-function showPop(n){const name=decodeURIComponent(n); const item=database.find(d=>d.name===name); if(!item) return; document.getElementById('mimg').src=baseFolder+item.image; document.getElementById('mt').textContent=item.name; document.getElementById('mp').textContent=item.point; modal.classList.add('on');}
+
+/* ---------------- UI ---------------- */
+const coord = document.getElementById("coord");
+const slider = document.getElementById("slider");
+const val = document.getElementById("val");
+
+slider.oninput = e=>{
+  val.textContent = e.target.value + "%";
+}
+
+/* ---------------- 드래그 ---------------- */
+let dragging=false;
+let sx=0, sy=0;
+let box, label;
+
+document.onmousedown = e=>{
+
+  if(e.target.closest(".panel")) return;
+  if(e.target.closest(".modal")) return;
+
+  dragging=true;
+
+  sx=e.clientX;
+  sy=e.clientY;
+
+  box=document.createElement("div");
+  box.className="box";
+
+  label=document.createElement("div");
+  label.className="label";
+
+  box.appendChild(label);
+
+  box.style.left=sx+"px";
+  box.style.top=sy+"px";
+
+  document.body.appendChild(box);
+}
+
+document.onmousemove = e=>{
+
+  coord.textContent = e.clientX + " / " + e.clientY;
+
+  if(!dragging) return;
+
+  const w=Math.abs(e.clientX-sx);
+  const h=Math.abs(e.clientY-sy);
+
+  box.style.left=Math.min(sx,e.clientX)+"px";
+  box.style.top=Math.min(sy,e.clientY)+"px";
+
+  box.style.width=w+"px";
+  box.style.height=h+"px";
+
+  if(w>0 && h>0){
+    label.textContent = "1:" + (Math.max(w,h)/Math.min(w,h)).toFixed(2);
+  }
+}
+
+/* ---------------- 결과 출력 ---------------- */
+document.onmouseup = e=>{
+
+  if(!dragging) return;
+  dragging=false;
+
+  const w=parseInt(box.style.width);
+  const h=parseInt(box.style.height);
+
+  if(w<20 || h<20){
+    box.remove();
+    return;
+  }
+
+  const userRatio = Math.max(w,h)/Math.min(w,h);
+
+  const t = parseInt(slider.value);
+
+  const range = 0.01 + (t/100)*0.7;
+
+  const result = database.filter(item =>
+    Math.abs(item.ratio-userRatio) <= range
+  ).sort((a,b)=>
+    Math.abs(a.ratio-userRatio) - Math.abs(b.ratio-userRatio)
+  );
+
+  if(result.length===0){
+    box.remove();
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="wrap">
+      ${result.map(item=>`
+        <div class="card" onclick="showPop('${encodeURIComponent(item.name)}')">
+          <img src="${baseFolder}${item.image}">
+          <div class="name">${item.name}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ---------------- 모달 ---------------- */
+function showPop(n){
+
+  const name = decodeURIComponent(n);
+
+  const item = database.find(v=>v.name===name);
+
+  if(!item) return;
+
+  document.getElementById("mimg").src = baseFolder + item.image;
+  document.getElementById("mtitle").textContent = item.name;
+  document.getElementById("mpoint").textContent = item.point;
+
+  document.getElementById("modal").classList.add("active");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.remove("active");
+}
 </script>
+
 </body>
 </html>
