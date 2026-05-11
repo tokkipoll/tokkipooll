@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Origami Ratio Search Lab</title>
+<title>Origami Ratio Search</title>
 
 <style>
 *{
@@ -13,13 +13,12 @@
 }
 
 body{
-    font-family: Arial, Helvetica, sans-serif;
     background:#ececec;
+    font-family:Arial, Helvetica, sans-serif;
     overflow:hidden;
-    color:#222;
 }
 
-/* 메인 공간 */
+/* 메인 작업 공간 */
 #stage{
     position:relative;
     width:100vw;
@@ -27,136 +26,95 @@ body{
     cursor:crosshair;
 }
 
-/* 실시간 드래그 박스 */
+/* 현재 드래그 박스 */
 #dragBox{
     position:absolute;
-    border:1px solid rgba(0,0,0,0.55);
-    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(0,0,0,.45);
+    background:rgba(255,255,255,.06);
     display:none;
     pointer-events:none;
 }
 
-/* 남는 흔적 박스 */
-.trace{
-    position:absolute;
-    border:1px solid rgba(0,0,0,0.32);
-    pointer-events:none;
-}
-
-/* 비율 표시 */
+/* 비율 태그 */
 #ratioTag{
     position:absolute;
     top:-24px;
     left:0;
-    font-size:11px;
-    padding:3px 7px;
     background:#111;
     color:#fff;
-    letter-spacing:.3px;
+    font-size:11px;
+    padding:3px 7px;
     white-space:nowrap;
 }
 
-/* 좌표 */
+/* 남는 박스 흔적 */
+.traceBox{
+    position:absolute;
+    border:1px solid rgba(0,0,0,.28);
+    overflow:hidden;
+}
+
+/* 내부 이미지 */
+.traceBox img{
+    position:absolute;
+    max-width:70px;
+    max-height:70px;
+    object-fit:contain;
+    pointer-events:none;
+}
+
+/* 우측 상단 좌표 */
 #coords{
     position:fixed;
     top:18px;
     right:18px;
-    font-size:12px;
-    background:rgba(255,255,255,0.9);
+    background:#fff;
     padding:8px 10px;
-    border:1px solid rgba(0,0,0,0.15);
+    font-size:12px;
+    border:1px solid rgba(0,0,0,.1);
 }
 
-/* 하단 컨트롤 */
+/* 하단 좌측 패널 */
 #panel{
     position:fixed;
     left:18px;
     bottom:18px;
     width:260px;
-    background:rgba(255,255,255,0.94);
-    border:1px solid rgba(0,0,0,0.12);
+    background:#fff;
     padding:14px;
+    border:1px solid rgba(0,0,0,.1);
 }
 
 #panel h1{
     font-size:14px;
-    font-weight:700;
-    margin-bottom:10px;
+    margin-bottom:12px;
 }
 
 #panel label{
     font-size:12px;
-    display:block;
-    margin-bottom:6px;
 }
 
 #tol{
     width:100%;
+    margin-top:8px;
 }
 
-#meta{
+#small{
     margin-top:10px;
     font-size:11px;
-    line-height:1.5;
-    color:#555;
-}
-
-/* 결과 영역 */
-#results{
-    position:fixed;
-    right:18px;
-    bottom:18px;
-    width:330px;
-    max-height:68vh;
-    overflow-y:auto;
-    background:rgba(255,255,255,0.96);
-    border:1px solid rgba(0,0,0,0.12);
-    padding:14px;
-}
-
-#results h2{
-    font-size:14px;
-    margin-bottom:12px;
-}
-
-.card{
-    margin-bottom:16px;
-    padding-bottom:14px;
-    border-bottom:1px solid rgba(0,0,0,0.08);
-}
-
-.card img{
-    width:100%;
-    display:block;
-    margin-bottom:8px;
-    background:#f2f2f2;
-}
-
-.card .name{
-    font-size:13px;
-    font-weight:700;
-}
-
-.card .sub{
-    font-size:11px;
     color:#666;
-    margin-top:4px;
-}
-
-.empty{
-    font-size:12px;
-    color:#777;
     line-height:1.5;
 }
 </style>
 </head>
-
 <body>
 
 <div id="stage">
+
     <div id="dragBox">
         <div id="ratioTag">1 : 1.00</div>
     </div>
+
 </div>
 
 <div id="coords">X:0 Y:0</div>
@@ -168,73 +126,72 @@ body{
         Tolerance :
         <span id="tolText">20%</span>
     </label>
+
     <input type="range" min="0" max="100" value="20" id="tol">
 
-    <div id="meta">
-        Drag empty space to draw a ratio box.<br>
-        Spacebar = clear traces<br>
-        Lower tolerance = stricter search
-    </div>
-</div>
-
-<div id="results">
-    <h2>Recommended</h2>
-    <div id="list" class="empty">
-        Draw a rectangle to begin searching.
+    <div id="small">
+        Drag empty space to search.<br>
+        Spacebar = clear boxes
     </div>
 </div>
 
 <script>
-/* ==========================
-   구글 시트 JSON 주소
-========================== */
+/* ===============================
+   구글시트 JSON 주소
+================================ */
 const SHEET_URL =
 "https://opensheet.elk.sh/1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60/Sheet1";
 
-/* ==========================
+/* ===============================
+   이미지 폴더 경로
+   (현재 html과 assets 폴더가 같은 위치)
+================================ */
+const ASSET_PATH = "assets/";
+
+/* ===============================
    상태값
-========================== */
+================================ */
 let db = [];
 let isDown = false;
 let startX = 0;
 let startY = 0;
 
-/* ==========================
+/* ===============================
    요소
-========================== */
+================================ */
 const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
 const ratioTag = document.getElementById("ratioTag");
 const coords = document.getElementById("coords");
 const tol = document.getElementById("tol");
 const tolText = document.getElementById("tolText");
-const list = document.getElementById("list");
 
-/* ==========================
+/* ===============================
    시트 불러오기
-========================== */
+================================ */
 fetch(SHEET_URL)
 .then(r => r.json())
 .then(data => {
     db = data;
+    console.log("sheet loaded:", db);
 })
-.catch(() => {
-    list.innerHTML = `<div class="empty">Google Sheet load failed.</div>`;
+.catch(err => {
+    console.error("sheet error:", err);
 });
 
-/* ==========================
-   Tolerance 표시
-========================== */
-tol.addEventListener("input", () => {
-    tolText.textContent = tol.value + "%";
+/* ===============================
+   tolerance 표시
+================================ */
+tol.addEventListener("input",()=>{
+    tolText.innerText = tol.value + "%";
 });
 
-/* ==========================
+/* ===============================
    마우스 다운
-========================== */
-stage.addEventListener("mousedown", (e) => {
-    isDown = true;
+================================ */
+stage.addEventListener("mousedown",(e)=>{
 
+    isDown = true;
     startX = e.clientX;
     startY = e.clientY;
 
@@ -245,165 +202,143 @@ stage.addEventListener("mousedown", (e) => {
     dragBox.style.height = "0px";
 });
 
-/* ==========================
+/* ===============================
    마우스 이동
-========================== */
-stage.addEventListener("mousemove", (e) => {
+================================ */
+stage.addEventListener("mousemove",(e)=>{
 
     coords.innerHTML = `X:${e.clientX} Y:${e.clientY}`;
 
     if(!isDown) return;
 
-    const x = Math.min(startX, e.clientX);
-    const y = Math.min(startY, e.clientY);
-    const w = Math.abs(e.clientX - startX);
-    const h = Math.abs(e.clientY - startY);
+    const x = Math.min(startX,e.clientX);
+    const y = Math.min(startY,e.clientY);
+    const w = Math.abs(e.clientX-startX);
+    const h = Math.abs(e.clientY-startY);
 
     dragBox.style.left = x + "px";
     dragBox.style.top = y + "px";
     dragBox.style.width = w + "px";
     dragBox.style.height = h + "px";
 
-    if(h > 3){
-        const ratio = (w / h).toFixed(2);
+    if(h > 2){
+        const ratio = (w/h).toFixed(2);
         ratioTag.innerHTML = `1 : ${ratio}`;
     }
 });
 
-/* ==========================
+/* ===============================
    마우스 업
-========================== */
-stage.addEventListener("mouseup", (e) => {
+================================ */
+stage.addEventListener("mouseup",(e)=>{
 
     if(!isDown) return;
     isDown = false;
 
-    const x = Math.min(startX, e.clientX);
-    const y = Math.min(startY, e.clientY);
-    const w = Math.abs(e.clientX - startX);
-    const h = Math.abs(e.clientY - startY);
-
     dragBox.style.display = "none";
 
-    if(w < 8 || h < 8) return;
+    const x = Math.min(startX,e.clientX);
+    const y = Math.min(startY,e.clientY);
+    const w = Math.abs(e.clientX-startX);
+    const h = Math.abs(e.clientY-startY);
 
-    /* 흔적 남기기 */
-    createTrace(x,y,w,h);
+    if(w < 10 || h < 10) return;
 
-    /* 검색 */
-    const ratio = w / h;
-    searchRatio(ratio);
+    const ratio = w/h;
+
+    createResultBox(x,y,w,h,ratio);
 });
 
-/* ==========================
-   흔적 생성
-========================== */
-function createTrace(x,y,w,h){
+/* ===============================
+   결과 박스 생성
+================================ */
+function createResultBox(x,y,w,h,userRatio){
 
-    const div = document.createElement("div");
-    div.className = "trace";
+    const box = document.createElement("div");
+    box.className = "traceBox";
 
-    div.style.left = x + "px";
-    div.style.top = y + "px";
-    div.style.width = w + "px";
-    div.style.height = h + "px";
+    box.style.left = x + "px";
+    box.style.top = y + "px";
+    box.style.width = w + "px";
+    box.style.height = h + "px";
 
-    stage.appendChild(div);
+    stage.appendChild(box);
 
-    fadeTrace();
-}
+    /* 검색 */
+    const tolerance = Number(tol.value)/100;
 
-/* ==========================
-   오래된 흔적 흐리기
-========================== */
-function fadeTrace(){
-
-    const traces = document.querySelectorAll(".trace");
-
-    traces.forEach((box, i) => {
-        const total = traces.length;
-        const opacity = Math.max(0.12, (i + 1) / total);
-        box.style.opacity = opacity;
-    });
-
-    if(traces.length > 22){
-        traces[0].remove();
-    }
-}
-
-/* ==========================
-   검색 로직
-========================== */
-function searchRatio(userRatio){
-
-    if(!db.length){
-        list.innerHTML = `<div class="empty">Database loading...</div>`;
-        return;
-    }
-
-    const t = Number(tol.value) / 100;
-
-    let result = db.filter(item => {
+    let result = db.filter(item=>{
 
         const r = parseFloat(item.ratio);
 
         if(isNaN(r)) return false;
 
-        const diff = Math.abs(r - userRatio);
+        const diff = Math.abs(r-userRatio);
 
-        return diff <= userRatio * t;
+        return diff <= userRatio * tolerance;
     });
 
     result.sort((a,b)=>{
         return Math.abs(a.ratio-userRatio) - Math.abs(b.ratio-userRatio);
     });
 
-    render(result.slice(0,8), userRatio);
-}
+    /* 최대 5개 이미지 넣기 */
+    result.slice(0,5).forEach(item=>{
 
-/* ==========================
-   렌더링
-========================== */
-function render(items, userRatio){
+        const img = document.createElement("img");
 
-    if(items.length === 0){
-        list.innerHTML = `
-        <div class="empty">
-        No result found.<br><br>
-        Ratio : ${userRatio.toFixed(2)}<br>
-        Increase tolerance.
-        </div>`;
-        return;
-    }
+        /* 시트 image 컬럼 값이 girl.png 면 자동으로 assets/girl.png */
+        img.src = ASSET_PATH + item.image;
 
-    list.innerHTML = "";
+        img.onerror = ()=>{
+            console.log("image fail:", img.src);
+        };
 
-    items.forEach(item => {
+        const size = 35 + Math.random()*40;
 
-        const img = item.image
-            ? `<img src="${item.image}" alt="">`
-            : "";
+        img.style.width = size + "px";
 
-        const html = `
-        <div class="card">
-            ${img}
-            <div class="name">${item.name || "Untitled"}</div>
-            <div class="sub">
-                ratio : ${item.ratio}
-            </div>
-        </div>
-        `;
+        img.style.left = Math.random() * Math.max(10,w-size-10) + "px";
+        img.style.top = Math.random() * Math.max(10,h-size-10) + "px";
 
-        list.innerHTML += html;
+        img.style.transform =
+            `rotate(${Math.random()*40-20}deg)`;
+
+        box.appendChild(img);
     });
+
+    fadeBoxes();
 }
 
-/* ==========================
-   스페이스바 = 흔적 삭제
-========================== */
+/* ===============================
+   오래된 박스 흐리게
+================================ */
+function fadeBoxes(){
+
+    const boxes = document.querySelectorAll(".traceBox");
+
+    boxes.forEach((box,i)=>{
+
+        const total = boxes.length;
+        const opacity = Math.max(.15,(i+1)/total);
+
+        box.style.opacity = opacity;
+    });
+
+    if(boxes.length > 18){
+        boxes[0].remove();
+    }
+}
+
+/* ===============================
+   스페이스바 = 초기화
+================================ */
 window.addEventListener("keydown",(e)=>{
+
     if(e.code === "Space"){
-        document.querySelectorAll(".trace").forEach(el=>el.remove());
+
+        document.querySelectorAll(".traceBox")
+        .forEach(el=>el.remove());
     }
 });
 </script>
