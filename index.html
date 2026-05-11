@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <title>ORIGAMI ARCHIVE.V1</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
     /* --- 기초 디자인 --- */
@@ -11,7 +12,8 @@
     
     body { 
         background: #ffffff; 
-        font-family: 'Barlow Condensed', sans-serif; 
+        /* 한글은 Pretendard, 영문은 Barlow Condensed 우선 적용 */
+        font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
@@ -23,16 +25,16 @@
     #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { 
         position:absolute; top:-25px; left:0; background:#00ff00; color:#000; 
-        font-size:11px; font-weight:600; padding:2px 6px; 
+        font-size:11px; font-weight:700; padding:2px 6px; 
     }
 
-    /* 결과 박스 (헤더 선 제거 및 텍스트 톤다운) */
+    /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { 
-        height: 24px; border-bottom: none; /* 선 제거 */
+        height: 24px; border-bottom: none; 
         display: flex; align-items: center; justify-content: space-between; 
-        padding: 0 10px; font-size: 13px; background: #fff; font-weight: 500; letter-spacing: 0.02em;
-        color: #aaa; /* 색상 톤다운 */
+        padding: 0 10px; font-size: 13px; background: #fff; font-weight: 600; letter-spacing: 0.02em;
+        color: #aaa;
     }
 
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 20px; align-items: center; }
@@ -42,48 +44,47 @@
     .item-wrapper { height: 100%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
     .result-img { height: calc(100% - 25px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     
+    /* 아이템 이름: 좁은 자간 적용 */
     .item-name { 
         font-size: 13px; margin-top: 10px; color: #000; text-transform: lowercase; 
-        font-weight: 400; letter-spacing: 0.01em; 
+        font-weight: 500; letter-spacing: -0.03em; 
     }
 
-    /* --- 상세 화면 (배경 이미지 복구) --- */
+    /* --- 상세 화면 모달 --- */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
     }
 
-    /* [중요] 배경 이미지: 희미하게 중앙 배치 */
     #detailBgImg { 
-        position: absolute; 
-        max-width: 70vw; max-height: 70vh; 
-        opacity: 0.12; /* 희미한 정도 */
-        z-index: 1; 
-        filter: grayscale(1); 
-        object-fit: contain; 
-        pointer-events: none; 
+        position: absolute; max-width: 65vw; max-height: 65vh; opacity: 0.12; 
+        z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; 
         top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     
     #detailName { 
-        font-size: 64px; font-weight: 500; margin-bottom: 30px; text-decoration: none; 
-        letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
+        font-size: 64px; font-weight: 700; margin-bottom: 30px; text-decoration: none; 
+        letter-spacing: -0.04em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
         text-transform: lowercase;
     }
     #detailName:hover { color: #00ff00; }
 
-    /* [비율 반영] 텍스트 박스 */
+    /* [한글 타이포 개선] 상세 설명 박스 */
     #detailPointBox { 
         border: 1px solid #000; 
-        padding: 50px; 
+        padding: 60px; 
         display: flex; align-items: center; justify-content: center; 
-        text-align: center; font-size: 19px; line-height: 1.5; 
-        background: rgba(255, 255, 255, 0.88); /* 배경 이미지가 비치도록 투명도 설정 */
+        text-align: center; 
+        font-size: 18px; /* 한글 가독성을 위해 살짝 상향 */
+        line-height: 1.7; /* 행간을 조금 더 쫀쫀하게 */
+        background: rgba(255, 255, 255, 0.9); 
         transition: width 0.4s ease, height 0.4s ease; 
         overflow-y: auto; 
-        z-index: 5; font-weight: 400; 
+        z-index: 5; 
+        font-weight: 400; 
+        letter-spacing: -0.05em; /* [핵심] 한글 자간을 좁혀서 세련되게 */
         max-width: 85vw; max-height: 55vh;
-        letter-spacing: -0.01em;
+        word-break: keep-all; /* 단어 단위 줄바꿈으로 정갈하게 */
     }
 
     /* 메타 데이터 톤다운 */
@@ -136,7 +137,7 @@
 </div>
 
 <script>
-// [기존의 parseCSV, init, toggleLang, updateUI 스크립트 그대로 유지]
+// [기존의 모든 JavaScript 로직 유지]
 let currentLang = 'KR';
 let currentActiveItem = null;
 const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" }, EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" } };
@@ -209,14 +210,10 @@ function refreshDetailContent() {
     const nameEl = document.getElementById("detailName");
     nameEl.innerText = item.name;
     nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
-
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
-    
-    // 배경 이미지 소스 할당
     const bgImg = document.getElementById("detailBgImg");
     bgImg.src = ASSET_PATH + item.image;
     bgImg.style.display = 'block';
-
     const baseArea = 180000; 
     let r = parseFloat(item.ratio) || 1;
     let targetW = Math.sqrt(baseArea * r);
@@ -224,7 +221,6 @@ function refreshDetailContent() {
     const boxEl = document.getElementById("detailPointBox");
     boxEl.style.width = Math.max(targetW, 350) + "px";
     boxEl.style.height = Math.max(targetH, 200) + "px";
-
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD"); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
