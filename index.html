@@ -17,7 +17,7 @@ body{
   height:100vh;
   overflow:hidden;
   font-family:Arial, Helvetica, sans-serif;
-  background:#000000;
+  background:#886262;
   background-image:radial-gradient(#ddd 1px, transparent 1px);
   background-size:20px 20px;
   cursor:crosshair;
@@ -168,202 +168,168 @@ button{
 </div>
 
 <script>
-/* ---------------- 설정 ---------------- */
 const sheetId = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const gid = "0";
 const baseFolder = "assets/";
 
-let database = [];
+let database=[];
 
-/* ---------------- CSV 로드 ---------------- */
+/* ---------------- CSV LOAD ---------------- */
 async function init(){
 
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+ const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
 
-  const res = await fetch(url);
-  const text = await res.text();
+ const res=await fetch(url);
+ const text=await res.text();
 
-  const rows = text.trim().split(/\r?\n/).map(row =>
-    row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v =>
-      v.replace(/^"|"$/g,'').trim()
-    ) || []
-  );
+ const rows=text.trim().split(/\r?\n/).map(row =>
+   row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v =>
+     v.replace(/^"|"$/g,'').trim()
+   ) || []
+ );
 
-  const header = rows[0].map(v=>v.toLowerCase());
+ database = rows.slice(1).map(cols=>{
 
-  const nameCol  = header.findIndex(v=>v.includes("name"));
-  const imgCol   = header.findIndex(v=>v.includes("image"));
-  const ratioCol = header.findIndex(v=>v.includes("ratio"));
-  const pointCol = header.findIndex(v=>v.includes("point"));
+   const ratio = normalize(cols[2]);
 
-  database = rows.slice(1).map(cols=>{
+   if(!cols[0] || !cols[1] || !ratio) return null;
 
-    const ratio = normalizeRatio(cols[ratioCol]);
+   return{
+     name: cols[0],
+     image: cols[1],
+     ratio: ratio,
+     point: cols[3] || ""
+   };
 
-    if(!cols[nameCol] || !ratio) return null;
+ }).filter(Boolean);
 
-    return {
-      name: cols[nameCol],
-      image: cols[imgCol],
-      ratio: ratio,
-      point: cols[pointCol] || ""
-    }
-
-  }).filter(Boolean);
-
-  console.log(database);
+ console.log(database);
 }
 
-/* ---------------- ratio 정리 ---------------- */
-function normalizeRatio(raw){
+function normalize(raw){
 
-  if(!raw) return null;
+ if(!raw) return null;
 
-  raw = String(raw)
-    .replace(/\s/g,'')
-    .replace(/：/g,':')
-    .replace(',', '.');
+ raw = String(raw)
+   .replace(/\s/g,'')
+   .replace(/：/g,':')
+   .replace(',', '.');
 
-  let ratio;
+ if(raw.includes(':')){
+   let [a,b] = raw.split(':').map(Number);
+   if(!a || !b) return null;
 
-  if(raw.includes(':')){
-    const [a,b] = raw.split(':').map(Number);
-    if(!a || !b) return null;
-    ratio = a/b;
-  }else{
-    ratio = parseFloat(raw);
-  }
+   let r = b/a;
+   return r >=1 ? r : 1/r;
+ }
 
-  if(!ratio) return null;
+ let n = parseFloat(raw);
+ if(!n) return null;
 
-  return ratio >= 1 ? ratio : 1/ratio;
+ return n >=1 ? n : 1/n;
 }
 
 init();
 
-/* ---------------- UI ---------------- */
-const coord = document.getElementById("coord");
-const slider = document.getElementById("slider");
-const val = document.getElementById("val");
+/* ---------------- DRAG ---------------- */
+let dragging=false,sx=0,sy=0,box,label;
 
-slider.oninput = e=>{
-  val.textContent = e.target.value + "%";
-}
+window.addEventListener("mousedown",e=>{
 
-/* ---------------- 드래그 ---------------- */
-let dragging = false;
-let sx=0, sy=0;
-let box, label;
+ if(e.target.closest(".panel")) return;
 
-window.addEventListener("mousedown", startDrag);
-window.addEventListener("mousemove", moveDrag);
-window.addEventListener("mouseup", endDrag);
+ dragging=true;
+ sx=e.clientX;
+ sy=e.clientY;
 
-function startDrag(e){
+ box=document.createElement("div");
+ box.className="box";
 
-  if(e.target.closest(".panel")) return;
-  if(e.target.closest(".modal")) return;
-  if(e.button !== 0) return;
+ label=document.createElement("div");
+ label.className="label";
 
-  dragging = true;
+ box.appendChild(label);
+ document.body.appendChild(box);
 
-  sx = e.clientX;
-  sy = e.clientY;
+});
 
-  box = document.createElement("div");
-  box.className = "box";
+window.addEventListener("mousemove",e=>{
 
-  label = document.createElement("div");
-  label.className = "label";
+ coord.textContent=e.clientX+" / "+e.clientY;
 
-  box.appendChild(label);
+ if(!dragging) return;
 
-  box.style.left = sx + "px";
-  box.style.top = sy + "px";
+ let w=Math.abs(e.clientX-sx);
+ let h=Math.abs(e.clientY-sy);
 
-  document.body.appendChild(box);
-}
+ box.style.left=Math.min(sx,e.clientX)+"px";
+ box.style.top=Math.min(sy,e.clientY)+"px";
+ box.style.width=w+"px";
+ box.style.height=h+"px";
 
-function moveDrag(e){
+ if(w>0 && h>0){
+   label.textContent="1:"+(Math.max(w,h)/Math.min(w,h)).toFixed(2);
+ }
 
-  coord.textContent = e.clientX + " / " + e.clientY;
+});
 
-  if(!dragging) return;
+window.addEventListener("mouseup",()=>{
 
-  const w = Math.abs(e.clientX - sx);
-  const h = Math.abs(e.clientY - sy);
+ if(!dragging) return;
+ dragging=false;
 
-  box.style.left = Math.min(sx,e.clientX) + "px";
-  box.style.top = Math.min(sy,e.clientY) + "px";
+ const w=parseInt(box.style.width);
+ const h=parseInt(box.style.height);
 
-  box.style.width = w + "px";
-  box.style.height = h + "px";
+ if(w<20 || h<20){
+   box.remove();
+   return;
+ }
 
-  if(w>0 && h>0){
-    label.textContent = "1:" + (Math.max(w,h)/Math.min(w,h)).toFixed(2);
-  }
-}
+ const userRatio=Math.max(w,h)/Math.min(w,h);
 
-function endDrag(){
+ const t=parseInt(slider.value);
 
-  if(!dragging) return;
-  dragging = false;
+ /* 핵심 */
+ const range = 0.03 + (t/100)*1.2;
 
-  const w = parseInt(box.style.width);
-  const h = parseInt(box.style.height);
+ const result = database.filter(item =>
+   Math.abs(item.ratio-userRatio) <= range
+ ).sort((a,b)=>
+   Math.abs(a.ratio-userRatio)-Math.abs(b.ratio-userRatio)
+ );
 
-  if(w < 20 || h < 20){
-    box.remove();
-    return;
-  }
+ if(!result.length){
+   box.remove();
+   return;
+ }
 
-  const userRatio = Math.max(w,h) / Math.min(w,h);
+ box.innerHTML = `
+ <div class="wrap">
+ ${result.map(item=>`
+   <div class="card" onclick="showPop('${encodeURIComponent(item.name)}')">
+     <img src="${baseFolder}${item.image}">
+     <div class="name">${item.name}</div>
+   </div>
+ `).join("")}
+ </div>
+ `;
+});
 
-  const t = parseInt(slider.value);
-
-  const range = 0.01 + (t/100)*0.7;
-
-  const result = database.filter(item =>
-    Math.abs(item.ratio - userRatio) <= range
-  ).sort((a,b)=>
-    Math.abs(a.ratio-userRatio) - Math.abs(b.ratio-userRatio)
-  );
-
-  if(result.length===0){
-    box.remove();
-    return;
-  }
-
-  box.innerHTML = `
-    <div class="wrap">
-      ${result.map(item=>`
-        <div class="card" onclick="showPop('${encodeURIComponent(item.name)}')">
-          <img src="${baseFolder}${item.image}">
-          <div class="name">${item.name}</div>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-/* ---------------- 모달 ---------------- */
 function showPop(n){
 
-  const name = decodeURIComponent(n);
+ const item = database.find(v=>v.name===decodeURIComponent(n));
+ if(!item) return;
 
-  const item = database.find(v=>v.name===name);
+ mimg.src = baseFolder + item.image;
+ mtitle.textContent = item.name;
+ mpoint.textContent = item.point;
 
-  if(!item) return;
-
-  document.getElementById("mimg").src = baseFolder + item.image;
-  document.getElementById("mtitle").textContent = item.name;
-  document.getElementById("mpoint").textContent = item.point;
-
-  document.getElementById("modal").classList.add("active");
+ modal.classList.add("active");
 }
 
 function closeModal(){
-  document.getElementById("modal").classList.remove("active");
+ modal.classList.remove("active");
 }
 </script>
 
