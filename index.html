@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>ORIGAMI ARCHIVE.V1</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
 
 <style>
     /* --- 기초 디자인 --- */
@@ -26,16 +26,13 @@
         font-size:11px; font-weight:600; padding:2px 6px; 
     }
 
-    /* 결과 박스 */
+    /* 결과 박스 (헤더 선 제거 및 텍스트 톤다운) */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { 
-        height: 24px; 
-        /* [수정] ratio 밑의 경계선 제거 */
-        border-bottom: none; 
+        height: 24px; border-bottom: none; /* 선 제거 */
         display: flex; align-items: center; justify-content: space-between; 
         padding: 0 10px; font-size: 13px; background: #fff; font-weight: 500; letter-spacing: 0.02em;
-        /* [수정] 비율 및 유닛 폰트 색상 톤다운 */
-        color: #999;
+        color: #aaa; /* 색상 톤다운 */
     }
 
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 20px; align-items: center; }
@@ -50,15 +47,21 @@
         font-weight: 400; letter-spacing: 0.01em; 
     }
 
-    /* 상세 화면 */
+    /* --- 상세 화면 (배경 이미지 복구) --- */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
     }
 
+    /* [중요] 배경 이미지: 희미하게 중앙 배치 */
     #detailBgImg { 
-        position: absolute; max-width: 65vw; max-height: 65vh; opacity: 0.1; 
-        z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; 
+        position: absolute; 
+        max-width: 70vw; max-height: 70vh; 
+        opacity: 0.12; /* 희미한 정도 */
+        z-index: 1; 
+        filter: grayscale(1); 
+        object-fit: contain; 
+        pointer-events: none; 
         top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     
@@ -69,12 +72,13 @@
     }
     #detailName:hover { color: #00ff00; }
 
+    /* [비율 반영] 텍스트 박스 */
     #detailPointBox { 
         border: 1px solid #000; 
         padding: 50px; 
         display: flex; align-items: center; justify-content: center; 
         text-align: center; font-size: 19px; line-height: 1.5; 
-        background: rgba(255, 255, 255, 0.92); 
+        background: rgba(255, 255, 255, 0.88); /* 배경 이미지가 비치도록 투명도 설정 */
         transition: width 0.4s ease, height 0.4s ease; 
         overflow-y: auto; 
         z-index: 5; font-weight: 400; 
@@ -82,11 +86,9 @@
         letter-spacing: -0.01em;
     }
 
-    /* 상세 메타 데이터 */
+    /* 메타 데이터 톤다운 */
     #detailMeta { 
-        margin-top: 35px; font-size: 15px; 
-        /* [수정] 상세 정보 폰트 색상 톤다운 */
-        color: #999; 
+        margin-top: 35px; font-size: 15px; color: #bbb; 
         letter-spacing: 3px; font-weight: 500; z-index: 10; 
     }
     #closeDetail { 
@@ -94,13 +96,13 @@
         border-bottom: 1.5px solid #000; font-weight: 600; z-index: 100;
     }
 
-    /* 하단 조작 패널 */
+    /* 조작 패널 */
     #panel { position:fixed; left:30px; bottom:30px; width:330px; background:#fff; padding:28px; border:1px solid #000; z-index:3000; }
     .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
-    #ui-title { font-size: 18px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
+    #ui-title { font-size: 18px; letter-spacing: -0.01em; font-weight: 700; text-transform: uppercase; } 
     .lang-switcher { font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
 
-    #status { font-size: 11px; color: #999; margin-bottom: 20px; display: block; font-weight: 500; }
+    #status { font-size: 11px; color: #ccc; margin-bottom: 20px; display: block; font-weight: 500; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1.5px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:#00ff00; border:2px solid #000; cursor:pointer; }
 </style>
@@ -134,38 +136,21 @@
 </div>
 
 <script>
+// [기존의 parseCSV, init, toggleLang, updateUI 스크립트 그대로 유지]
 let currentLang = 'KR';
 let currentActiveItem = null;
-
-const translations = {
-    KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" },
-    EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" }
-};
-
+const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" }, EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" } };
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
-
-let db = [];
-let isDown = false;
-let startX, startY;
+let db = []; let isDown = false; let startX, startY;
 
 function parseCSV(text) {
     const result = []; let row = []; let field = ""; let inQuotes = false;
     for (let i = 0; i < text.length; i++) {
         const char = text[i]; const nextChar = text[i + 1];
-        if (inQuotes) {
-            if (char === '"' && nextChar === '"') { field += '"'; i++; }
-            else if (char === '"') { inQuotes = false; }
-            else { field += char; }
-        } else {
-            if (char === '"') { inQuotes = true; }
-            else if (char === ',') { row.push(field); field = ""; }
-            else if (char === '\n' || char === '\r') {
-                if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; }
-                if (char === '\r' && nextChar === '\n') i++;
-            } else { field += char; }
-        }
+        if (inQuotes) { if (char === '"' && nextChar === '"') { field += '"'; i++; } else if (char === '"') { inQuotes = false; } else { field += char; } }
+        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(field); field = ""; } else if (char === '\n' || char === '\r') { if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; } if (char === '\r' && nextChar === '\n') i++; } else { field += char; } }
     }
     if (field || row.length > 0) { row.push(field); result.push(row); }
     return result;
@@ -178,27 +163,16 @@ async function init() {
         const rows = parseCSV(csvText);
         const headers = rows[0].map(h => h.toLowerCase().trim());
         const idx = { name: headers.indexOf('name'), image: headers.indexOf('image'), ratio: headers.indexOf('ratio'), point: headers.indexOf('point'), point_en: headers.indexOf('point_en'), level: headers.indexOf('level'), time: headers.indexOf('time'), link: headers.indexOf('link') };
-        
         db = rows.slice(1).map(row => {
             let rVal = parseFloat(row[idx.ratio]);
-            return { 
-                name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], 
-                point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], 
-                level: row[idx.level], time: row[idx.time], ratio: rVal, 
-                normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" 
-            };
+            return { name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], level: row[idx.level], time: row[idx.time], ratio: rVal, normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" };
         }).filter(item => item.image && !isNaN(item.normRatio));
         updateUI();
     } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
 }
 init();
 
-function toggleLang() {
-    currentLang = (currentLang === 'KR') ? 'EN' : 'KR';
-    updateUI();
-    if (currentActiveItem) refreshDetailContent();
-}
-
+function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
 function updateUI() {
     const t = translations[currentLang];
     document.getElementById("ui-title").innerText = t.title;
@@ -209,36 +183,14 @@ function updateUI() {
 
 const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
+document.getElementById("tol").addEventListener("input", (e) => { document.getElementById("tolText").innerText = e.target.value + "%"; });
 
-document.getElementById("tol").addEventListener("input", (e) => { 
-    document.getElementById("tolText").innerText = e.target.value + "%"; 
-});
-
-stage.addEventListener("mousedown", (e) => {
-    if(e.target !== stage) return;
-    isDown = true; startX = e.clientX; startY = e.clientY;
-    dragBox.style.display = "block";
-});
-stage.addEventListener("mousemove", (e) => {
-    if(!isDown) return;
-    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
-    dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
-    const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
-});
-stage.addEventListener("mouseup", (e) => {
-    if(!isDown) return; isDown = false; dragBox.style.display = "none";
-    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    if(w < 25 || h < 25) return;
-    createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
-});
+stage.addEventListener("mousedown", (e) => { if(e.target !== stage) return; isDown = true; startX = e.clientX; startY = e.clientY; dragBox.style.display = "block"; });
+stage.addEventListener("mousemove", (e) => { if(!isDown) return; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); dragBox.style.width = w + "px"; dragBox.style.height = h + "px"; dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px"; const currentR = w > h ? (w/h) : (h/w); document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`; });
+stage.addEventListener("mouseup", (e) => { if(!isDown) return; isDown = false; dragBox.style.display = "none"; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); if(w < 25 || h < 25) return; createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w)); });
 
 function createResultBox(x, y, w, h, userRatio) {
-    const box = document.createElement("div");
-    box.className = "traceBox";
-    Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
-    stage.appendChild(box);
+    const box = document.createElement("div"); box.className = "traceBox"; Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' }); stage.appendChild(box);
     const tVal = Number(document.getElementById("tol").value) / 100;
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     if (results.length > 0) {
@@ -251,12 +203,7 @@ function createResultBox(x, y, w, h, userRatio) {
     }
 }
 
-function openDetail(encoded) {
-    currentActiveItem = JSON.parse(decodeURIComponent(atob(encoded)));
-    refreshDetailContent();
-    document.getElementById("detailView").style.display = "flex";
-}
-
+function openDetail(encoded) { currentActiveItem = JSON.parse(decodeURIComponent(atob(encoded))); refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; }
 function refreshDetailContent() {
     const item = currentActiveItem;
     const nameEl = document.getElementById("detailName");
@@ -264,26 +211,24 @@ function refreshDetailContent() {
     nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
 
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
-    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
+    
+    // 배경 이미지 소스 할당
+    const bgImg = document.getElementById("detailBgImg");
+    bgImg.src = ASSET_PATH + item.image;
+    bgImg.style.display = 'block';
 
     const baseArea = 180000; 
     let r = parseFloat(item.ratio) || 1;
     let targetW = Math.sqrt(baseArea * r);
     let targetH = baseArea / targetW;
-
     const boxEl = document.getElementById("detailPointBox");
     boxEl.style.width = Math.max(targetW, 350) + "px";
     boxEl.style.height = Math.max(targetH, 200) + "px";
 
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
-    if(currentLang === 'EN') { 
-        time = time.toUpperCase().replace("분", " MIN"); 
-        level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); 
-    }
-    document.getElementById("detailTime").innerText = time; 
-    document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
+    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD"); }
+    document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
-
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
 window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
