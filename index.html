@@ -2,132 +2,119 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Origami Ratio Search</title>
-
 <style>
-/* --- 기초 스타일 (완전 직각 디자인) --- */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    border-radius: 0 !important; 
-}
+    /* --- 완전 직각 디자인 스타일 --- */
+    * { 
+        margin:0; padding:0; box-sizing:border-box; 
+        border-radius: 0 !important; /* 모든 둥근 모서리 제거 */
+    }
 
-body{
-    background:#ececec;
-    font-family: Arial, sans-serif;
-    overflow:hidden;
-}
+    body { 
+        background:#ececec; 
+        font-family: 'Malgun Gothic', sans-serif; 
+        overflow:hidden; 
+    }
 
-#stage{
-    position:relative;
-    width:100vw;
-    height:100vh;
-    cursor:crosshair;
-}
+    /* 메인 작업 공간 */
+    #stage { 
+        position:relative; 
+        width:100vw; height:100vh; 
+        cursor:crosshair; 
+    }
 
-#dragBox{
-    position:absolute;
-    border:2px solid #000;
-    background:rgba(0,0,0,0.03);
-    display:none;
-    pointer-events:none;
-    z-index: 100;
-}
+    /* 드래그 사각형 */
+    #dragBox { 
+        position:absolute; 
+        border:2px solid #000; 
+        background:rgba(0,0,0,0.05); 
+        display:none; 
+        pointer-events:none; 
+        z-index:100; 
+    }
 
-#ratioTag{
-    position:absolute;
-    top:-26px;
-    left:0;
-    background:#000;
-    color:#fff;
-    font-size:12px;
-    font-weight: bold;
-    padding:4px 8px;
-    white-space:nowrap;
-}
+    /* 비율 표시 태그 */
+    #ratioTag { 
+        position:absolute; 
+        top:-28px; left:0; 
+        background:#000; color:#fff; 
+        font-size:12px; font-weight:bold; 
+        padding:4px 10px; 
+        white-space:nowrap; 
+    }
 
-.traceBox{
-    position:absolute;
-    border:1px solid rgba(0,0,0,0.2);
-    background: rgba(255,255,255,0.3);
-    overflow:hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    /* 결과 박스 (흔적) */
+    .traceBox { 
+        position:absolute; 
+        border:1px solid rgba(0,0,0,0.2); 
+        background:rgba(255,255,255,0.5); 
+        overflow:hidden; 
+        display:flex; align-items:center; justify-content:center;
+        transition: opacity 0.5s;
+    }
 
-/* 결과 없음 텍스트 */
-.no-result {
-    font-size: 10px;
-    color: #999;
-    text-align: center;
-}
+    /* 결과 없음 텍스트 */
+    .no-result { 
+        font-size:11px; color:#888; font-weight: bold; 
+    }
 
-.traceBox img{
-    position:absolute;
-    max-width:80px;
-    max-height:80px;
-    object-fit:contain;
-    pointer-events:none;
-}
+    /* 종이접기 이미지 */
+    .traceBox img { 
+        position:absolute; 
+        max-width:85%; max-height:85%; 
+        object-fit:contain; 
+        pointer-events:none; 
+    }
 
-#panel{
-    position:fixed;
-    left:18px;
-    bottom:18px;
-    width:260px;
-    background:#fff;
-    padding:20px;
-    border:2px solid #000;
-    box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
-    z-index: 200;
-}
+    /* 조작 패널 */
+    #panel { 
+        position:fixed; 
+        left:20px; bottom:20px; 
+        width:280px; 
+        background:#fff; 
+        padding:20px; 
+        border:2px solid #000; 
+        box-shadow: 6px 6px 0px rgba(0,0,0,0.1); 
+        z-index:200; 
+    }
 
-#panel h1{
-    font-size:16px;
-    margin-bottom:12px;
-    border-bottom: 2px solid #000;
-    padding-bottom: 8px;
-}
+    #panel h1 { 
+        font-size:18px; margin-bottom:15px; 
+        border-bottom:3px solid #000; padding-bottom:5px; 
+    }
 
-#tol{
-    width:100%;
-    margin: 12px 0;
-    cursor: pointer;
-    -webkit-appearance: none;
-    background: #ccc;
-    height: 8px;
-}
+    #tol { 
+        width:100%; margin:15px 0; 
+        -webkit-appearance:none; background:#ddd; height:10px; 
+    }
 
-#tol::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    background: #000;
-}
+    #tol::-webkit-slider-thumb { 
+        -webkit-appearance:none; width:20px; height:20px; 
+        background:#000; cursor:pointer; 
+    }
+
+    #info { font-size:12px; line-height:1.6; color:#444; }
 </style>
 </head>
 <body>
 
 <div id="stage">
-    <div id="dragBox">
-        <div id="ratioTag">1 : 1.00</div>
-    </div>
+    <div id="dragBox"><div id="ratioTag">1 : 1.00</div></div>
 </div>
 
 <div id="panel">
     <h1>Origami Ratio Search</h1>
-    <label>Tolerance: <span id="tolText">50%</span></label>
-    <input type="range" min="1" max="100" value="50" id="tol">
-    <div id="small" style="font-size:11px; margin-top:10px;">
-        • 드래그하면 비율에 맞는 항목이 뜹니다.<br>
-        • 안 뜰 경우 Tolerance를 높여보세요.
+    <label><b>Tolerance:</b> <span id="tolText">30%</span></label>
+    <input type="range" min="1" max="100" value="30" id="tol">
+    <div id="info">
+        • 원하는 비율로 화면을 <b>드래그</b>하세요.<br>
+        • <b>Spacebar:</b> 모든 박스 삭제<br>
+        • 시트 데이터와 비율이 맞으면 이미지가 뜹니다.
     </div>
 </div>
 
 <script>
+/* --- 설정값 --- */
 const SHEET_URL = "https://opensheet.elk.sh/1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60/Sheet1";
 const ASSET_PATH = "foldingpapers/assets/"; 
 
@@ -141,21 +128,28 @@ const ratioTag = document.getElementById("ratioTag");
 const tol = document.getElementById("tol");
 const tolText = document.getElementById("tolText");
 
-// 데이터 로드
+/* --- 1. 구글 시트 데이터 로드 --- */
 fetch(SHEET_URL).then(r => r.json()).then(data => {
     db = data.map(item => {
-        let rVal = item.ratio;
-        if (typeof rVal === 'string' && rVal.includes(':')) {
-            const p = rVal.split(':');
-            rVal = parseFloat(p[0]) / parseFloat(p[1]);
-        } else {
-            rVal = parseFloat(rVal);
-        }
-        return { ...item, parsedRatio: rVal };
-    });
-    console.log("데이터 로드 성공:", db);
+        // 시트의 ratio 열에서 숫자만 추출
+        let rVal = parseFloat(item.ratio);
+        
+        // 시트의 image 열에서 파일명 추출
+        let imgFile = item.image ? item.image.trim() : "";
+
+        // 비율이 1보다 작으면(예: 0.4) 검색을 위해 역수(2.5)로 변환하여 저장
+        let normalized = (rVal > 0 && rVal < 1) ? 1/rVal : rVal;
+
+        return { 
+            name: item.name,
+            image: imgFile,
+            normRatio: normalized 
+        };
+    }).filter(item => !isNaN(item.normRatio));
+    console.log("시트 데이터 로드 완료:", db);
 });
 
+/* --- 2. 드래그 이벤트 --- */
 tol.addEventListener("input", () => { tolText.innerText = tol.value + "%"; });
 
 stage.addEventListener("mousedown", (e) => {
@@ -168,29 +162,31 @@ stage.addEventListener("mousemove", (e) => {
     if(!isDown) return;
     const w = Math.abs(e.clientX - startX);
     const h = Math.abs(e.clientY - startY);
+    
     dragBox.style.width = w + "px";
     dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px";
     dragBox.style.top = Math.min(e.clientY, startY) + "px";
     
-    // 화면에 보여줄 때는 가로/세로 중 큰 값을 작은 값으로 나눈 비율 표시
-    const displayRatio = w > h ? (w/h) : (h/w);
-    ratioTag.innerHTML = `1 : ${displayRatio.toFixed(2)}`;
+    // 현재 드래그 비율 실시간 표시 (긴 변 / 짧은 변)
+    const currentR = w > h ? (w/h) : (h/w);
+    ratioTag.innerHTML = `Ratio 1 : ${currentR.toFixed(2)}`;
 });
 
 stage.addEventListener("mouseup", (e) => {
     if(!isDown) return;
     isDown = false;
     dragBox.style.display = "none";
+
     const w = Math.abs(e.clientX - startX);
     const h = Math.abs(e.clientY - startY);
-    if(w < 10 || h < 10) return;
+    if(w < 20 || h < 20) return;
 
-    // 핵심: 가로가 길든 세로가 길든 "긴 변 / 짧은 변" 비율로 검색
     const userRatio = w > h ? (w/h) : (h/w);
     createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, userRatio);
 });
 
+/* --- 3. 결과 박스 및 이미지 생성 --- */
 function createResultBox(x, y, w, h, userRatio) {
     const box = document.createElement("div");
     box.className = "traceBox";
@@ -199,41 +195,53 @@ function createResultBox(x, y, w, h, userRatio) {
 
     const tVal = Number(tol.value) / 100;
     
-    // 필터링 (가로세로 비율 대응)
+    // 시트 숫자와 사용자 드래그 비율 비교
     let results = db.filter(item => {
-        const r = item.parsedRatio;
-        if (isNaN(r)) return false;
-        // 시트의 비율 r과 사용자의 비율 userRatio 비교
-        return Math.abs(r - userRatio) <= (userRatio * tVal) || 
-               Math.abs((1/r) - userRatio) <= (userRatio * tVal);
+        const diff = Math.abs(item.normRatio - userRatio);
+        return diff <= (userRatio * tVal);
     });
 
     if (results.length === 0) {
-        box.innerHTML = '<span class="no-result">일치 항목 없음</span>';
+        box.innerHTML = `<span class="no-result">일치 없음 (1:${userRatio.toFixed(1)})</span>`;
     } else {
-        results.slice(0, 5).forEach(item => {
+        // 가장 비슷한 비율 순으로 정렬 후 최대 3개 표시
+        results.sort((a,b) => Math.abs(a.normRatio - userRatio) - Math.abs(b.normRatio - userRatio));
+        
+        results.slice(0, 3).forEach(item => {
             const img = document.createElement("img");
-            img.src = ASSET_PATH + item.image.trim();
+            img.src = ASSET_PATH + item.image;
+            
             img.onload = () => {
-                const size = Math.min(w, h, 30 + Math.random() * 50);
-                Object.assign(img.style, {
-                    width: size + "px",
-                    left: Math.random() * (w - size) + "px",
-                    top: Math.random() * (h - size) + "px",
-                    transform: `rotate(${Math.random() * 20 - 10}deg)`
-                });
+                // 상자 크기에 맞춰 이미지 랜덤 배치
+                const imgSize = Math.min(w, h) * 0.7;
+                img.style.width = imgSize + "px";
+                img.style.left = Math.random() * (w - imgSize) + "px";
+                img.style.top = Math.random() * (h - imgSize) + "px";
+                img.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
                 box.appendChild(img);
+            };
+            
+            img.onerror = () => {
+                console.log("이미지 파일 없음:", img.src);
             };
         });
     }
-    
-    const all = document.querySelectorAll(".traceBox");
-    if(all.length > 10) all[0].remove();
+
+    // 오래된 박스 투명도 조절 및 삭제
+    const allBoxes = document.querySelectorAll(".traceBox");
+    allBoxes.forEach((b, i) => {
+        b.style.opacity = Math.max(0.2, (i + 1) / allBoxes.length);
+    });
+    if(allBoxes.length > 10) allBoxes[0].remove();
 }
 
+/* --- 4. 초기화 --- */
 window.addEventListener("keydown", (e) => {
-    if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
+    if(e.code === "Space") {
+        document.querySelectorAll(".traceBox").forEach(el => el.remove());
+    }
 });
 </script>
+
 </body>
 </html>
