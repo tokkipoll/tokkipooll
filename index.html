@@ -2,27 +2,25 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Poetic Kitsch Final</title>
+<title>Origami Specimen Archive</title>
 <style>
-    /* --- 기초 디자인: 미니멀 & 직각 --- */
-    * { 
-        margin:0; padding:0; box-sizing:border-box; 
-        border-radius: 0 !important; 
-    }
+    /* --- 기초 디자인: 미니멀 & 수직/수평 --- */
+    * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
-        background: #fdfdfd; 
+        background: #f0f0f0; 
         font-family: 'Courier New', Courier, monospace; 
         overflow: hidden; 
+        color: #000;
     }
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 드래그 박스: 네온 그린 (키치 포인트) */
+    /* 드래그 박스: 얇은 가이드라인 */
     #dragBox { 
         position:absolute; 
         border:1px solid #00ff00; 
-        background: rgba(0, 255, 0, 0.02);
+        background: rgba(0, 255, 0, 0.05);
         display:none; pointer-events:none; z-index:1000; 
     }
     #ratioTag { 
@@ -31,102 +29,85 @@
         font-size:10px; font-weight:bold; padding:2px 6px; 
     }
 
-    /* 결과 박스: 투명한 프레임 역할 */
+    /* 결과 박스: 표본 전시 케이스 (Specimen Box) */
     .traceBox { 
         position:absolute; 
-        border:1px solid rgba(0,0,0,0.1); 
-        background: transparent;
-        z-index: 50;
-        overflow: visible; /* 아이템이 박스 밖으로 살짝 나가도 됨 */
-    }
-
-    /* 항목 레이아웃: 크기를 키우고 겹침 허용 */
-    .result-item {
-        position: absolute;
+        border:1px solid #000; 
         background: #fff;
-        border: 1px solid #000;
-        padding: 8px;
+        z-index: 50;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        transition: transform 0.2s;
+    }
+
+    /* 상자 모서리 L자 크롭 마크 (키치 포인트) */
+    .traceBox::before {
+        content: ""; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px;
+        border-top: 2px solid #00ff00; border-left: 2px solid #00ff00; z-index: 10;
+    }
+
+    /* 이미지: 상자 비율에 맞춰 꽉 채우기 (핵심) */
+    .result-container {
+        flex: 1; width: 100%; height: 100%;
+        overflow: hidden; position: relative;
         cursor: pointer;
-        box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
     }
-    .result-item:hover {
-        z-index: 100;
-        border-color: #00ff00;
-        transform: scale(1.05);
-    }
-
     .result-img {
-        width: 100%;
-        height: auto;
-        object-fit: contain;
+        width: 100%; height: 100%;
+        object-fit: cover; /* 비율에 맞춰 꽉 채움 */
+        filter: grayscale(0.3); transition: filter 0.3s;
     }
+    .result-container:hover .result-img { filter: grayscale(0); }
 
-    .result-info {
-        width: 100%;
-        margin-top: 6px;
-        font-size: 9px;
-        line-height: 1.2;
-        color: #000;
-        border-top: 0.5px solid #eee;
-        padding-top: 4px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+    /* 하단 라벨: 바코드 및 데이터 (키치 & 미니멀) */
+    .result-label {
+        height: 40px; border-top: 1px solid #000;
+        background: #fff; display: flex; align-items: center;
+        padding: 0 10px; font-size: 9px; justify-content: space-between;
     }
+    .barcode { font-size: 14px; font-family: 'Libre Barcode 39', cursive, sans-serif; }
 
     /* 상세 화면 (모달) */
     #detailView {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #fff; display: none; z-index: 2000;
         flex-direction: column; align-items: center; justify-content: center;
-        cursor: pointer; padding: 40px;
-    }
-    #detailBgImg {
-        position: absolute; width: 400px; opacity: 0.1; z-index: -1;
-        filter: grayscale(1);
+        padding: 60px; cursor: s-resize;
     }
     #detailPointBox {
-        border: 1px solid #000; padding: 40px; max-width: 500px;
-        text-align: left; font-size: 14px; line-height: 1.8;
-        margin-bottom: 40px; background: #fff;
+        border-top: 1px solid #000; border-bottom: 1px solid #000;
+        padding: 60px 20px; width: 100%; max-width: 600px;
+        text-align: center; font-size: 16px; line-height: 2; margin: 40px 0;
     }
-    #detailName { font-size: 24px; font-weight: normal; margin-bottom: 15px; text-decoration: underline; }
-    #detailMeta { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+    #detailName { font-size: 32px; letter-spacing: 12px; font-weight: normal; }
+    #detailMeta { font-size: 10px; letter-spacing: 2px; color: #888; }
 
-    /* 패널 */
+    /* 조작 패널 */
     #panel { 
         position:fixed; left:30px; bottom:30px; width:220px; 
         background:#fff; padding:25px; border:1px solid #000; z-index:2000; 
     }
-    #panel h1 { font-size:14px; margin-bottom:15px; letter-spacing: 1px; }
-    #status { font-size:9px; margin-bottom:15px; color: #888; }
-    #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
+    #panel h1 { font-size:12px; margin-bottom:15px; letter-spacing: 2px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+    #status { font-size:9px; margin-bottom:15px; color: #aaa; }
+    #tol { width:100%; margin:10px 0; -webkit-appearance:none; background:#000; height:1px; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; background:#00ff00; border:1px solid #000; cursor:pointer; }
 </style>
 </head>
 <body>
 
 <div id="stage">
-    <div id="dragBox"><div id="ratioTag">1:1.00</div></div>
+    <div id="dragBox"><div id="ratioTag">0.00</div></div>
 </div>
 
 <div id="detailView">
-    <img id="detailBgImg" src="">
-    <div id="detailPointBox"></div>
-    <div id="detailName"></div>
-    <div id="detailMeta">
-        <span id="detailTime"></span> • <span id="detailLevel"></span>
-    </div>
+    <div id="detailName">NAME</div>
+    <div id="detailPointBox">POINT TEXT</div>
+    <div id="detailMeta">TIME / LEVEL</div>
 </div>
 
 <div id="panel">
-    <h1>Archive.v2</h1>
-    <div id="status">CONNECTING...</div>
-    <label style="font-size: 10px;">TOLERANCE: <span id="tolText">50%</span></label>
+    <h1>SPECIMEN_ARCHIVE.sys</h1>
+    <div id="status">Scanning...</div>
     <input type="range" min="1" max="100" value="50" id="tol">
 </div>
 
@@ -143,8 +124,9 @@ async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        const lines = csvText.split("\n");
-        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const rows = csvText.split('\n').map(row => row.split(','));
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        
         const idx = {
             name: headers.findIndex(h => h.includes('name')),
             image: headers.findIndex(h => h.includes('image')),
@@ -153,34 +135,30 @@ async function init() {
             level: headers.findIndex(h => h.includes('level')),
             time: headers.findIndex(h => h.includes('time'))
         };
-        db = lines.slice(1).map(line => {
-            const col = line.split(",");
-            let rRaw = col[idx.ratio];
+
+        db = rows.slice(1).map(row => {
+            let rRaw = row[idx.ratio];
             let rVal = parseFloat(rRaw);
             if (rRaw && rRaw.includes(':')) {
-                const parts = rRaw.split(':');
-                rVal = parseFloat(parts[parts.length - 1]) / parseFloat(parts[0] || 1);
+                const p = rRaw.split(':');
+                rVal = parseFloat(p[p.length-1]) / parseFloat(p[0]);
             }
             return {
-                name: col[idx.name] || "Unnamed",
-                image: col[idx.image] ? col[idx.image].trim() : "",
-                point: col[idx.point] || "",
-                level: col[idx.level] || "",
-                time: col[idx.time] || "",
+                name: row[idx.name] || "Unknown",
+                image: row[idx.image] ? row[idx.image].trim() : "",
+                point: row[idx.point] || "",
+                level: row[idx.level] || "",
+                time: row[idx.time] || "",
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
             };
-        }).filter(item => !isNaN(item.normRatio) && item.image !== "");
-        document.getElementById("status").innerHTML = `INDEXED: ${db.length} ITEMS`;
-    } catch (e) { document.getElementById("status").innerHTML = `FAILED TO CONNECT`; }
+        }).filter(item => item.image !== "");
+        document.getElementById("status").innerHTML = `Objects: ${db.length}`;
+    } catch (e) { document.getElementById("status").innerHTML = `Offline`; }
 }
 init();
 
 const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
-
-document.getElementById("tol").addEventListener("input", (e) => { 
-    document.getElementById("tolText").innerText = e.target.value + "%"; 
-});
 
 stage.addEventListener("mousedown", (e) => {
     isDown = true; startX = e.clientX; startY = e.clientY;
@@ -193,13 +171,13 @@ stage.addEventListener("mousemove", (e) => {
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `R: ${currentR.toFixed(2)}`;
+    document.getElementById("ratioTag").innerHTML = `Target Ratio 1:${currentR.toFixed(2)}`;
 });
 
 stage.addEventListener("mouseup", (e) => {
     if(!isDown) return; isDown = false; dragBox.style.display = "none";
     const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    if(w < 20 || h < 20) return;
+    if(w < 30 || h < 30) return;
     createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
 });
 
@@ -209,49 +187,41 @@ function createResultBox(x, y, w, h, userRatio) {
     Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
     stage.appendChild(box);
 
-    const tVal = Number(document.getElementById("tol").value) / 100;
-    let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
+    const tolerance = Number(document.getElementById("tol").value) / 100;
+    const results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tolerance));
 
     if (results.length > 0) {
-        // 최대 3개까지만 크게 보여줌 (겹치기 효과를 위해)
-        results.slice(0, 3).forEach((item, i) => {
-            const itemDiv = document.createElement("div");
-            itemDiv.className = "result-item";
-            
-            // 레이아웃 지그재그 배치 (키치한 재미)
-            const itemSize = Math.min(w, h) * 0.7; // 상자의 70% 크기로 과감하게 키움
-            const offset = i * 25; // 25px씩 어긋나게 배치
-            
-            Object.assign(itemDiv.style, {
-                width: itemSize + "px",
-                left: offset + "px",
-                top: offset + "px"
-            });
-
-            itemDiv.innerHTML = `
+        const item = results[0]; // 가장 유사한 표본 하나를 박스에 꽉 채움
+        box.innerHTML = `
+            <div class="result-container" onclick="showDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
                 <img src="${ASSET_PATH + item.image}" class="result-img">
-                <div class="result-info">${item.name} / ${item.time}</div>
-            `;
-            
-            itemDiv.onclick = (e) => { e.stopPropagation(); showDetail(item); };
-            box.appendChild(itemDiv);
-        });
+            </div>
+            <div class="result-label">
+                <span>OBJ_ID: ${item.name.substring(0,3).toUpperCase()}</span>
+                <span>R: 1:${item.normRatio.toFixed(1)}</span>
+                <span class="barcode">||| || | |||</span>
+            </div>
+        `;
+    } else {
+        box.innerHTML = `<div style="flex:1; display:flex; align-items:center; justify-content:center; font-size:10px; color:#ccc;">NON_MATCH</div>`;
     }
+    
+    const all = document.querySelectorAll(".traceBox");
+    if(all.length > 5) all[0].remove();
 }
 
-function showDetail(item) {
-    const detailView = document.getElementById("detailView");
-    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
-    document.getElementById("detailPointBox").innerText = item.point || "No description.";
+function showDetail(encoded) {
+    const item = JSON.parse(decodeURIComponent(atob(encoded)));
+    const view = document.getElementById("detailView");
     document.getElementById("detailName").innerText = item.name;
-    document.getElementById("detailTime").innerText = item.time;
-    document.getElementById("detailLevel").innerText = "LEV." + item.level;
-    detailView.style.display = "flex";
+    document.getElementById("detailPointBox").innerText = item.point;
+    document.getElementById("detailMeta").innerText = `${item.time} / LV.${item.level}`;
+    view.style.display = "flex";
 }
 
 document.getElementById("detailView").onclick = function() { this.style.display = "none"; };
 window.addEventListener("keydown", (e) => {
-    if(e.code === "Space") document.querySelectorAll(".traceBox, .result-item").forEach(el => el.remove());
+    if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
 });
 </script>
 </body>
