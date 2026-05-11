@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>Origami Archive - Final Polish</title>
+<title>Origami Archive - V1 Master</title>
 <style>
-    /* --- 디자인 스타일 --- */
+    /* --- 디자인 스타일 유지 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     body { background: #fdfdfd; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
@@ -17,11 +17,11 @@
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 10px; gap: 15px; align-items: center; }
     .image-list::-webkit-scrollbar { height: 2px; }
     .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
+
     .item-wrapper { height: 100%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-    .result-img { height: calc(100% - 15px); width: auto; object-fit: contain; border: 0.5px solid #eee; }
+    .result-img { height: calc(100% - 15px); width: auto; object-fit: contain; border: 0.5px solid #eee; background: #f0f0f0; } /* 배경색 추가로 이미지 없을 시 대비 */
     .item-name { font-size: 8px; margin-top: 5px; color: #888; text-transform: uppercase; }
 
-    /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 60vw; max-height: 60vh; opacity: 0.1; z-index: -1; filter: grayscale(1); object-fit: contain; pointer-events: none; }
     
@@ -40,11 +40,15 @@
     #detailMeta { margin-top: 30px; font-size: 11px; color: #000; letter-spacing: 3px; text-transform: uppercase; text-align: center; }
     #closeDetail { position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #000; z-index: 100; }
 
-    /* 조작 패널 */
-    #panel { position:fixed; left:30px; bottom:30px; width:260px; background:#fff; padding:25px; border:1px solid #000; z-index:3000; }
-    #panel h1 { font-size:12px; margin-bottom:15px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: bold; }
+    #panel { position:fixed; left:30px; bottom:30px; width:220px; background:#fff; padding:25px; border:1px solid #000; z-index:3000; }
+    #panel h1 { font-size:11px; margin-bottom:15px; letter-spacing: 0.5px; font-weight: bold; }
+    
+    /* --- [추가] 블링킹 애니메이션 --- */
+    #status { font-size:9px; color: #888; margin-bottom: 10px; }
+    .blink { animation: blink-animation 1.5s steps(5, start) infinite; color: #00ff00 !important; }
+    @keyframes blink-animation { to { visibility: hidden; } }
+
     .lang-switcher { position: absolute; top: 25px; right: 25px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #000; padding-bottom: 2px; }
-    #status { font-size:9px; color: #00ff00; font-weight: bold; margin-bottom: 10px; background: #000; display: inline-block; padding: 2px 8px; letter-spacing: 0.5px; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1px solid #000; cursor:pointer; }
 </style>
@@ -58,7 +62,7 @@
 <div id="detailView">
     <div id="closeDetail" onclick="closeDetail()">CLOSE</div>
     <div id="detailName" onclick="goToLink()"></div>
-    <img id="detailBgImg" src="">
+    <img id="detailBgImg" src="" onerror="this.style.display='none'"> 
     <div id="detailPointBox" onclick="event.stopPropagation()"></div>
     <div id="detailMeta">
         <span id="detailTime"></span> • <span id="detailLevel"></span>
@@ -67,12 +71,10 @@
 
 <div id="panel">
     <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
-    <h1 id="ui-title">ORIGAMI ARCHIVE.TOKKIPOOLL</h1>
-    <div id="status" id="ui-status">SYNCING WITH GOOGLE SHEETS...</div>
-    <div style="margin-top:10px;">
-        <label style="font-size: 10px;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
-        <input type="range" min="1" max="100" value="30" id="tol">
-    </div>
+    <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1>
+    <div id="status" class="blink">CONNECTING...</div>
+    <label style="font-size: 10px;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
+    <input type="range" min="1" max="100" value="30" id="tol">
 </div>
 
 <script>
@@ -80,8 +82,8 @@ let currentLang = 'KR';
 let currentActiveItem = null;
 
 const translations = {
-    KR: { tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" },
-    EN: { tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" }
+    KR: { title: "기록.V1", tol: "오차 범위", indexed: "개 항목 연결됨", close: "닫기" },
+    EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", indexed: "ITEMS INDEXED", close: "CLOSE" }
 };
 
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
@@ -135,7 +137,8 @@ async function init() {
         };
 
         db = rows.slice(1).map(row => {
-            let rVal = parseFloat(row[idx.ratio]);
+            let rRaw = row[idx.ratio];
+            let rVal = parseFloat(rRaw);
             return {
                 name: row[idx.name],
                 image: row[idx.image],
@@ -149,8 +152,14 @@ async function init() {
             };
         }).filter(item => !isNaN(item.normRatio) && item.image);
 
+        // 로드 완료 후 블링킹 멈추고 상태 업데이트
+        const statusEl = document.getElementById("status");
+        statusEl.classList.remove("blink");
         updateUI();
-    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
+    } catch (e) { 
+        document.getElementById("status").innerHTML = `ERROR`; 
+        document.getElementById("status").classList.add("blink");
+    }
 }
 init();
 
@@ -162,10 +171,9 @@ function toggleLang() {
 
 function updateUI() {
     const t = translations[currentLang];
+    document.getElementById("ui-title").innerText = t.title;
     document.getElementById("ui-tol").innerText = t.tol;
-    document.getElementById("closeDetail").innerText = t.close;
-    // 상태 메시지 동적 변경 (숫자 제거)
-    document.getElementById("status").innerHTML = `● ${t.status}`;
+    document.getElementById("status").innerHTML = `${db.length} ${t.indexed}`;
 }
 
 const stage = document.getElementById("stage");
@@ -206,7 +214,7 @@ function createResultBox(x, y, w, h, userRatio) {
         box.innerHTML = `<div class="box-header"><span>1:${userRatio.toFixed(1)}</span><span>${results.length}</span></div>
             <div class="image-list">${results.map(item => `
                 <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
-                    <img src="${ASSET_PATH + item.image}" class="result-img">
+                    <img src="${ASSET_PATH + item.image}" class="result-img" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='">
                     <span class="item-name">${item.name}</span>
                 </div>`).join('')}</div>`;
     }
@@ -229,3 +237,32 @@ function refreshDetailContent() {
     } else {
         nameEl.style.textDecoration = "none";
         nameEl.style.cursor = "default";
+    }
+
+    document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
+    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
+
+    const baseSize = 400;
+    const r = item.ratio || 1;
+    document.getElementById("detailPointBox").style.width = (r >= 1 ? baseSize : baseSize * r) + "px";
+    document.getElementById("detailPointBox").style.height = (r >= 1 ? baseSize / r : baseSize) + "px";
+
+    let time = item.time || "0 MIN";
+    let level = item.level || "LEV.1";
+    if(currentLang === 'EN') {
+        time = time.toUpperCase().replace("분", " MIN");
+        level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD");
+    }
+    document.getElementById("detailTime").innerText = time;
+    document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
+}
+
+function goToLink() {
+    if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank');
+}
+
+function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
+window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
+</script>
+</body>
+</html>
