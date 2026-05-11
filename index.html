@@ -4,58 +4,52 @@
 <meta charset="UTF-8" />
 <title>Origami Ratio Search</title>
 <style>
-    /* 직각 디자인 스타일 */
+    /* 기본 스타일 및 직각 디자인 */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
-    body { background:#f4f4f4; font-family: sans-serif; overflow:hidden; }
+    body { background:#ececec; font-family: sans-serif; overflow:hidden; }
     
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
     
-    /* 드래그 중인 박스 */
+    /* 드래그 박스 */
     #dragBox { 
-        position:absolute; 
-        border:2px solid #000; 
-        background:rgba(255,255,255,0.5); /* 드래그 중에는 약간 투명 */
-        display:none; 
-        pointer-events:none; 
-        z-index:100; 
+        position:absolute; border:2px solid #000; background:rgba(255,255,255,0.5);
+        display:none; pointer-events:none; z-index:100; 
     }
-    
-    #ratioTag { 
-        position:absolute; top:-26px; left:0; 
-        background:#000; color:#fff; 
-        font-size:12px; font-weight:bold; padding:4px 8px; white-space:nowrap; 
-    }
+    #ratioTag { position:absolute; top:-26px; left:0; background:#000; color:#fff; font-size:12px; font-weight:bold; padding:4px 8px; white-space:nowrap; }
 
-    /* 결과 박스 (불투명한 하얀색으로 수정) */
+    /* 결과 박스 (하얀색 불투명) */
     .traceBox { 
-        position:absolute; 
-        border:2px solid #000; 
-        background:#ffffff; /* 완전 불투명 하얀색 */
-        overflow-y: auto; /* 내용이 많으면 스크롤 */
-        display: flex; 
-        flex-wrap: wrap; /* 이미지가 겹치지 않게 줄바꿈 */
-        align-content: flex-start;
-        padding: 10px;
-        gap: 10px; /* 이미지 사이 간격 */
-        transition: opacity 0.5s;
+        position:absolute; border:2px solid #000; background:#ffffff; 
+        overflow-y: auto; display: flex; flex-wrap: wrap; padding: 10px; gap: 10px; z-index: 50;
     }
+    .traceBox img { width: 60px; height: 60px; object-fit: contain; cursor: pointer; border: 1px solid #eee; }
+    .traceBox img:hover { border-color: #000; }
 
-    .no-result { font-size:11px; color:#666; font-weight: bold; width: 100%; text-align: center; }
-
-    /* 결과 이미지 스타일 (겹치지 않도록 정렬됨) */
-    .traceBox img { 
-        width: 60px; /* 이미지 크기 고정 */
-        height: 60px; 
-        object-fit: contain; 
-        border: 1px solid #eee;
+    /* 상세 모달 창 (요청하신 디자인) */
+    #detailView {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: #fff; display: none; z-index: 1000;
+        flex-direction: column; align-items: center; justify-content: center;
+        cursor: pointer;
     }
-    
+    #detailBgImg {
+        position: absolute; width: 400px; opacity: 0.2; z-index: -1;
+        top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+    #detailPointBox {
+        border: 1px solid #000; padding: 30px; max-width: 600px;
+        text-align: center; font-size: 18px; font-weight: bold; line-height: 1.4;
+        margin-bottom: 20px; background: rgba(255,255,255,0.8);
+    }
+    #detailName { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+    #detailMeta { font-size: 18px; color: #333; }
+    #detailMeta span { margin: 0 15px; }
+
     #panel { 
         position:fixed; left:18px; bottom:18px; width:280px; 
         background:#fff; padding:20px; border:2px solid #000; 
         box-shadow:5px 5px 0px rgba(0,0,0,0.1); z-index:200; 
     }
-    #panel h1 { font-size:16px; margin-bottom:12px; border-bottom:2px solid #000; padding-bottom:8px; }
     #status { font-size:11px; margin-bottom:10px; padding:6px; background:#f0f0f0; border:1px solid #ccc; }
     #tol { width:100%; margin:12px 0; -webkit-appearance:none; background:#ccc; height:8px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; background:#000; cursor:pointer; }
@@ -67,9 +61,19 @@
     <div id="dragBox"><div id="ratioTag">Ratio 1 : 1.00</div></div>
 </div>
 
+<div id="detailView">
+    <img id="detailBgImg" src="" alt="bg">
+    <div id="detailPointBox">설명이 들어가는 자리입니다.</div>
+    <div id="detailName">항목 이름</div>
+    <div id="detailMeta">
+        <span id="detailTime">0 min</span>
+        <span id="detailLevel">lev. 0</span>
+    </div>
+</div>
+
 <div id="panel">
     <h1>Origami Ratio Search</h1>
-    <div id="status">데이터 불러오는 중...</div>
+    <div id="status">데이터 연결 중...</div>
     <label>Tolerance: <span id="tolText">50%</span></label>
     <input type="range" min="1" max="100" value="50" id="tol">
 </div>
@@ -83,72 +87,67 @@ let db = [];
 let isDown = false;
 let startX, startY;
 
-const statusDiv = document.getElementById("status");
-const stage = document.getElementById("stage");
-const dragBox = document.getElementById("dragBox");
-const ratioTag = document.getElementById("ratioTag");
-
-function parseCSV(csvText) {
-    const lines = csvText.split("\n");
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-    const ratioIdx = headers.findIndex(h => h.includes("ratio"));
-    const imageIdx = headers.findIndex(h => h.includes("image"));
-
-    return lines.slice(1).map(line => {
-        const columns = line.split(",");
-        let rRaw = columns[ratioIdx];
-        let rVal = parseFloat(rRaw);
-        if (rRaw && rRaw.includes(':')) {
-            const parts = rRaw.split(':');
-            rVal = parseFloat(parts[parts.length - 1]) / parseFloat(parts[0] || 1);
-        }
-        return {
-            image: columns[imageIdx] ? columns[imageIdx].trim() : "",
-            normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
-        };
-    }).filter(item => !isNaN(item.normRatio));
-}
-
 async function init() {
     try {
         const response = await fetch(CSV_URL);
         const csvText = await response.text();
-        db = parseCSV(csvText);
-        statusDiv.innerHTML = `✅ 연결 성공: <b>${db.length}개 데이터</b>`;
+        const lines = csvText.split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        
+        // 인덱스 찾기
+        const idx = {
+            name: headers.indexOf('name'),
+            image: headers.indexOf('image'),
+            ratio: headers.indexOf('ratio'),
+            point: headers.indexOf('point'),
+            level: headers.indexOf('level'),
+            time: headers.indexOf('time')
+        };
+
+        db = lines.slice(1).map(line => {
+            const col = line.split(",");
+            let rRaw = col[idx.ratio];
+            let rVal = parseFloat(rRaw);
+            if (rRaw && rRaw.includes(':')) {
+                const parts = rRaw.split(':');
+                rVal = parseFloat(parts[parts.length - 1]) / parseFloat(parts[0] || 1);
+            }
+            return {
+                name: col[idx.name],
+                image: col[idx.image]?.trim(),
+                point: col[idx.point],
+                level: col[idx.level],
+                time: col[idx.time],
+                normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal
+            };
+        }).filter(item => !isNaN(item.normRatio));
+
+        document.getElementById("status").innerHTML = `✅ 연결 성공: <b>${db.length}개</b>`;
     } catch (e) {
-        statusDiv.innerHTML = `❌ 연결 실패: 공유 설정을 확인하세요.`;
+        document.getElementById("status").innerHTML = `❌ 연결 실패`;
     }
 }
 init();
 
-document.getElementById("tol").addEventListener("input", (e) => { 
-    document.getElementById("tolText").innerText = e.target.value + "%"; 
-});
+// 드래그 로직 (기존과 동일)
+const stage = document.getElementById("stage");
+const dragBox = document.getElementById("dragBox");
 
 stage.addEventListener("mousedown", (e) => {
-    isDown = true;
-    startX = e.clientX; startY = e.clientY;
+    isDown = true; startX = e.clientX; startY = e.clientY;
     dragBox.style.display = "block";
 });
-
 stage.addEventListener("mousemove", (e) => {
     if(!isDown) return;
-    const w = Math.abs(e.clientX - startX);
-    const h = Math.abs(e.clientY - startY);
-    dragBox.style.width = w + "px";
-    dragBox.style.height = h + "px";
-    dragBox.style.left = Math.min(e.clientX, startX) + "px";
-    dragBox.style.top = Math.min(e.clientY, startY) + "px";
+    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
+    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
+    dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
-    ratioTag.innerHTML = `Ratio 1 : ${currentR.toFixed(2)}`;
+    document.getElementById("ratioTag").innerHTML = `Ratio 1 : ${currentR.toFixed(2)}`;
 });
-
 stage.addEventListener("mouseup", (e) => {
-    if(!isDown) return;
-    isDown = false;
-    dragBox.style.display = "none";
-    const w = Math.abs(e.clientX - startX);
-    const h = Math.abs(e.clientY - startY);
+    if(!isDown) return; isDown = false; dragBox.style.display = "none";
+    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
     if(w < 20 || h < 20) return;
     createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
 });
@@ -163,21 +162,36 @@ function createResultBox(x, y, w, h, userRatio) {
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
 
     if (results.length === 0) {
-        box.innerHTML = `<span class="no-result">일치 없음 (1:${userRatio.toFixed(1)})</span>`;
+        box.innerHTML = `<span style="font-size:11px; color:#999;">일치 없음</span>`;
     } else {
-        results.sort((a,b) => Math.abs(a.normRatio - userRatio) - Math.abs(b.normRatio - userRatio));
-        // 상자 크기에 따라 적절한 개수만 표시 (겹치지 않게 하기 위함)
-        results.slice(0, 12).forEach(item => {
-            if(!item.image) return;
+        results.forEach(item => {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
+            // 이미지 클릭 시 상세 정보 보기
+            img.onclick = () => showDetail(item);
             img.onload = () => box.appendChild(img);
         });
     }
-    const all = document.querySelectorAll(".traceBox");
-    if(all.length > 8) all[0].remove();
 }
 
+// 상세 정보 보여주기 함수
+function showDetail(item) {
+    const detailView = document.getElementById("detailView");
+    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
+    document.getElementById("detailPointBox").innerText = item.point || "설명이 없습니다.";
+    document.getElementById("detailName").innerText = item.name;
+    document.getElementById("detailTime").innerText = item.time || "0 min";
+    document.getElementById("detailLevel").innerText = "lev. " + (item.level || "0");
+    
+    detailView.style.display = "flex";
+}
+
+// 상세 화면 닫기
+document.getElementById("detailView").onclick = function() {
+    this.style.display = "none";
+};
+
+// 스페이스바 초기화
 window.addEventListener("keydown", (e) => {
     if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove());
 });
