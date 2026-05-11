@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>origami archive.v1</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>ORIGAMI ARCHIVE.V1</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
 
 <style>
     /* --- 기초 디자인 --- */
@@ -11,7 +11,7 @@
     
     body { 
         background: #ffffff; 
-        font-family: 'Barlow Condensed', 'Courier New', Courier, monospace; 
+        font-family: 'Barlow Condensed', sans-serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
@@ -23,20 +23,19 @@
     #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { 
         position:absolute; top:-25px; left:0; background:#00ff00; color:#000; 
-        font-size:11px; font-weight:700; padding:2px 6px; font-family: 'Space Mono', monospace;
+        font-size:11px; font-weight:600; padding:2px 6px; 
     }
 
-    /* 1. 결과 박스 레이아웃 (헤더 선 제거) */
+    /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { 
         height: 24px; 
-        border-bottom: none; /* [수정] ratio 밑의 선 제거 */
+        /* [수정] ratio 밑의 경계선 제거 */
+        border-bottom: none; 
         display: flex; align-items: center; justify-content: space-between; 
-        padding: 0 10px; font-size: 11px; background: #fff; 
-        font-weight: 500; letter-spacing: 0.02em;
-        color: #999; /* [수정] 헤더 텍스트 색상 톤다운 */
-        font-family: 'Space Mono', monospace;
-        text-transform: lowercase;
+        padding: 0 10px; font-size: 13px; background: #fff; font-weight: 500; letter-spacing: 0.02em;
+        /* [수정] 비율 및 유닛 폰트 색상 톤다운 */
+        color: #999;
     }
 
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 20px; align-items: center; }
@@ -47,58 +46,61 @@
     .result-img { height: calc(100% - 25px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     
     .item-name { 
-        font-size: 12px; margin-top: 10px; color: #000; text-transform: lowercase; 
-        font-weight: 400; letter-spacing: -0.02em; 
+        font-size: 13px; margin-top: 10px; color: #000; text-transform: lowercase; 
+        font-weight: 400; letter-spacing: 0.01em; 
     }
 
-    /* 2. 상세 화면 모달 */
+    /* 상세 화면 */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
     }
 
     #detailBgImg { 
-        position: absolute; max-width: 65vw; max-height: 65vh; opacity: 0.12; 
+        position: absolute; max-width: 65vw; max-height: 65vh; opacity: 0.1; 
         z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; 
         top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     
     #detailName { 
-        font-size: 58px; font-weight: 600; margin-bottom: 35px; text-decoration: none; 
-        letter-spacing: -0.03em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
+        font-size: 64px; font-weight: 500; margin-bottom: 30px; text-decoration: none; 
+        letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
         text-transform: lowercase;
     }
     #detailName:hover { color: #00ff00; }
 
     #detailPointBox { 
-        border: 1px solid #000; padding: 50px; 
+        border: 1px solid #000; 
+        padding: 50px; 
         display: flex; align-items: center; justify-content: center; 
-        text-align: center; font-size: 16px; line-height: 1.8; 
-        background: rgba(255, 255, 255, 0.9); 
-        transition: width 0.5s ease, height 0.5s ease; 
-        overflow-y: auto; z-index: 5; font-weight: 400;
+        text-align: center; font-size: 19px; line-height: 1.5; 
+        background: rgba(255, 255, 255, 0.92); 
+        transition: width 0.4s ease, height 0.4s ease; 
+        overflow-y: auto; 
+        z-index: 5; font-weight: 400; 
         max-width: 85vw; max-height: 55vh;
+        letter-spacing: -0.01em;
     }
 
-    /* [수정] 상세 페이지 메타 데이터 색상 톤다운 */
+    /* 상세 메타 데이터 */
     #detailMeta { 
-        margin-top: 40px; font-size: 14px; color: #aaa; /* [수정] 더 연한 회색으로 */
-        letter-spacing: 2px; font-weight: 400; z-index: 10; 
-        font-family: 'Space Mono', monospace;
-        text-transform: lowercase;
+        margin-top: 35px; font-size: 15px; 
+        /* [수정] 상세 정보 폰트 색상 톤다운 */
+        color: #999; 
+        letter-spacing: 3px; font-weight: 500; z-index: 10; 
     }
     #closeDetail { 
-        position: absolute; top: 40px; right: 40px; font-size: 12px; cursor: pointer; 
-        border-bottom: 1px solid #000; font-weight: 700; z-index: 100;
+        position: absolute; top: 40px; right: 40px; font-size: 14px; cursor: pointer; 
+        border-bottom: 1.5px solid #000; font-weight: 600; z-index: 100;
     }
 
-    /* 3. 조작 패널 */
+    /* 하단 조작 패널 */
     #panel { position:fixed; left:30px; bottom:30px; width:330px; background:#fff; padding:28px; border:1px solid #000; z-index:3000; }
     .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
-    #ui-title { font-size: 18px; letter-spacing: -0.01em; font-weight: 700; text-transform: lowercase; } 
-    .lang-switcher { font-size: 12px; font-weight: 700; cursor: pointer; border-bottom: 1.5px solid #000; }
+    #ui-title { font-size: 18px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
+    .lang-switcher { font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
 
-    #status { font-size: 11px; color: #999; margin-bottom: 20px; display: block; font-weight: 500; font-family: 'Space Mono', monospace; text-transform: lowercase; }
+    #status { font-size: 11px; color: #999; margin-bottom: 20px; display: block; font-weight: 500; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1.5px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:#00ff00; border:2px solid #000; cursor:pointer; }
 </style>
@@ -106,11 +108,11 @@
 <body>
 
 <div id="stage">
-    <div id="dragBox"><div id="ratioTag">ratio 1:1.00</div></div>
+    <div id="dragBox"><div id="ratioTag">1:1.00</div></div>
 </div>
 
 <div id="detailView">
-    <div id="closeDetail" onclick="closeDetail()">close</div>
+    <div id="closeDetail" onclick="closeDetail()">CLOSE</div>
     <div id="detailName" onclick="goToLink()"></div>
     <img id="detailBgImg" src="" onerror="this.style.display='none'">
     <div id="detailPointBox" onclick="event.stopPropagation()"></div>
@@ -121,12 +123,12 @@
 
 <div id="panel">
     <div class="panel-header">
-        <h1 id="ui-title">origami archive.v1</h1> 
-        <div class="lang-switcher" onclick="toggleLang()">en / kr</div>
+        <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1> 
+        <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
     </div>
-    <div id="status">synced with google sheets</div>
+    <div id="status">SYNCED WITH GOOGLE SHEETS</div>
     <div style="margin-top:10px;">
-        <label style="font-size: 12px; font-weight: 600;"><span id="ui-tol">tolerance</span>: <span id="tolText">30%</span></label>
+        <label style="font-size: 12px; font-weight: 600;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
         <input type="range" min="1" max="100" value="30" id="tol">
     </div>
 </div>
@@ -136,8 +138,8 @@ let currentLang = 'KR';
 let currentActiveItem = null;
 
 const translations = {
-    KR: { title: "기록.v1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" },
-    EN: { title: "origami archive.v1", tol: "tolerance", status: "synced with google sheets", close: "close" }
+    KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" },
+    EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" }
 };
 
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
@@ -187,7 +189,7 @@ async function init() {
             };
         }).filter(item => item.image && !isNaN(item.normRatio));
         updateUI();
-    } catch (e) { document.getElementById("status").innerHTML = `offline`; }
+    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
 }
 init();
 
@@ -202,7 +204,7 @@ function updateUI() {
     document.getElementById("ui-title").innerText = t.title;
     document.getElementById("ui-tol").innerText = t.tol;
     document.getElementById("closeDetail").innerText = t.close;
-    document.getElementById("status").innerHTML = t.status;
+    document.getElementById("status").innerHTML = `● ${t.status}`;
 }
 
 const stage = document.getElementById("stage");
@@ -240,7 +242,7 @@ function createResultBox(x, y, w, h, userRatio) {
     const tVal = Number(document.getElementById("tol").value) / 100;
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     if (results.length > 0) {
-        box.innerHTML = `<div class="box-header"><span>1:${userRatio.toFixed(1)}</span><span>${results.length} units</span></div>
+        box.innerHTML = `<div class="box-header"><span>ratio 1:${userRatio.toFixed(1)}</span><span>${results.length} units</span></div>
             <div class="image-list">${results.map(item => `
                 <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
                     <img src="${ASSET_PATH + item.image}" class="result-img" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='">
@@ -264,7 +266,6 @@ function refreshDetailContent() {
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
 
-    // 면적 기반 비율 가변 박스 계산
     const baseArea = 180000; 
     let r = parseFloat(item.ratio) || 1;
     let targetW = Math.sqrt(baseArea * r);
@@ -274,13 +275,13 @@ function refreshDetailContent() {
     boxEl.style.width = Math.max(targetW, 350) + "px";
     boxEl.style.height = Math.max(targetH, 200) + "px";
 
-    let time = item.time || "0 min"; let level = item.level || "lev.1";
+    let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { 
         time = time.toUpperCase().replace("분", " MIN"); 
         level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); 
     }
     document.getElementById("detailTime").innerText = time; 
-    document.getElementById("detailLevel").innerText = level.includes('lev') ? level : `lev.${level}`;
+    document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
 
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
