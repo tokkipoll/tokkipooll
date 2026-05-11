@@ -3,134 +3,100 @@
 <head>
 <meta charset="UTF-8" />
 <title>ORIGAMI ARCHIVE.V1</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+
 <style>
-    /* --- 기초 디자인: 미니멀 & 화이트 --- */
+    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
         background: #ffffff; 
-        font-family: 'Courier New', Courier, monospace; 
+        font-family: 'Barlow Condensed', sans-serif; 
         overflow: hidden; 
+        color: #000;
+        -webkit-font-smoothing: antialiased;
     }
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
     /* 드래그 가이드 */
-    #dragBox { 
-        position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.03);
-        display:none; pointer-events:none; z-index:1000; 
-    }
+    #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { 
-        position:absolute; top:-25px; left:0; 
-        background:#00ff00; color:#000; 
-        font-size:12px; font-weight:bold; padding:3px 8px; 
+        position:absolute; top:-25px; left:0; background:#00ff00; color:#000; 
+        font-size:11px; font-weight:600; padding:2px 6px; 
     }
 
-    /* 결과 박스 레이아웃 */
-    .traceBox { 
-        position:absolute; border:1px solid #000; background: #fff; 
-        z-index: 50; display: flex; flex-direction: column;
-    }
+    /* 결과 박스 */
+    .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { 
-        height: 24px; border-bottom: 1px solid #000; 
-        display: flex; align-items: center; justify-content: space-between; 
-        padding: 0 10px; font-size: 10px; background: #fafafa; 
-        font-weight: bold; letter-spacing: 0.5px;
+        height: 24px; border-bottom: 1px solid #000; display: flex; align-items: center; justify-content: space-between; 
+        padding: 0 10px; font-size: 13px; background: #fff; font-weight: 500; letter-spacing: 0.02em;
     }
 
-    /* 이미지 리스트 */
-    .image-list { 
-        flex: 1; display: flex; overflow-x: auto; 
-        padding: 15px; gap: 20px; align-items: center; 
-    }
-    .image-list::-webkit-scrollbar { height: 3px; }
+    .image-list { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 20px; align-items: center; }
+    .image-list::-webkit-scrollbar { height: 2px; }
     .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
 
-    .item-wrapper { 
-        height: 100%; flex-shrink: 0; 
-        display: flex; flex-direction: column; align-items: center; cursor: pointer; 
-    }
-    .result-img { 
-        height: calc(100% - 20px); width: auto; 
-        object-fit: contain; border: 1px solid #f0f0f0; 
-    }
+    .item-wrapper { height: 100%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .result-img { height: calc(100% - 25px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     
-    /* 아이템 이름 스타일 */
+    /* [수정] 아이템 이름: 응축된 느낌의 소문자 타이포 */
     .item-name { 
-        font-size: 11px; 
-        margin-top: 12px; 
-        color: #000; 
-        text-transform: uppercase; 
-        font-weight: 600; 
-        letter-spacing: -0.8px;
-        text-decoration: none;
+        font-size: 13px; margin-top: 10px; color: #000; text-transform: lowercase; 
+        font-weight: 400; letter-spacing: 0.01em; 
     }
 
-    /* 상세 화면 모달 */
+    /* 상세 화면 */
     #detailView { 
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-        background: #fff; display: none; z-index: 2000; 
-        flex-direction: column; align-items: center; justify-content: center; 
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
+        display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
     }
 
-    /* 배경 이미지 희미하게 */
     #detailBgImg { 
-        position: absolute; 
-        max-width: 70vw; max-height: 70vh; 
-        opacity: 0.12; 
-        z-index: 1; 
-        filter: grayscale(1); 
-        object-fit: contain; 
-        pointer-events: none; 
+        position: absolute; max-width: 65vw; max-height: 65vh; opacity: 0.1; 
+        z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; 
         top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     
-    /* [수정] 상세 페이지 제목: 밑줄 제거 및 자간 축소 */
+    /* [수정] 상세 페이지 제목: Condensed 스타일 극대화 */
     #detailName { 
-        font-size: 38px; 
-        font-weight: 600; 
-        margin-bottom: 40px; 
-        text-decoration: none !important; /* 밑줄 강제 제거 */
-        letter-spacing: -1.5px; /* 자간 더 좁게 */
-        cursor: pointer; 
-        transition: color 0.2s; 
-        z-index: 10;
-        color: #000;
+        font-size: 64px; font-weight: 500; margin-bottom: 30px; text-decoration: none; 
+        letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
+        text-transform: lowercase;
     }
     #detailName:hover { color: #00ff00; }
 
-    /* 상세 설명 박스 */
+    /* [비율 반영] 텍스트 박스 */
     #detailPointBox { 
-        border: 1px solid #000; padding: 50px; 
+        border: 1px solid #000; 
+        padding: 50px; 
         display: flex; align-items: center; justify-content: center; 
-        text-align: center; font-size: 16px; line-height: 2.2; 
-        background: rgba(255, 255, 255, 0.88); 
-        transition: all 0.5s ease; overflow-y: auto; 
-        min-width: 400px; min-height: 260px;
-        max-width: 80vw; max-height: 60vh;
-        z-index: 5;
+        text-align: center; font-size: 19px; line-height: 1.5; 
+        background: rgba(255, 255, 255, 0.92); 
+        transition: width 0.4s ease, height 0.4s ease; 
+        overflow-y: auto; 
+        z-index: 5; font-weight: 400; 
+        max-width: 85vw; max-height: 55vh;
+        letter-spacing: -0.01em;
     }
 
+    /* 메타 데이터 */
     #detailMeta { 
-        margin-top: 40px; font-size: 13px; color: #000; 
-        letter-spacing: 4px; font-weight: bold; z-index: 10;
+        margin-top: 35px; font-size: 15px; color: #000; 
+        letter-spacing: 3px; font-weight: 500; z-index: 10; 
     }
     #closeDetail { 
-        position: absolute; top: 40px; right: 40px; 
-        font-size: 13px; cursor: pointer; border-bottom: 1.5px solid #000; 
-        font-weight: bold; z-index: 100;
+        position: absolute; top: 40px; right: 40px; font-size: 14px; cursor: pointer; 
+        border-bottom: 1.5px solid #000; font-weight: 600; z-index: 100;
     }
 
-    /* 조작 패널 */
-    #panel { 
-        position:fixed; left:30px; bottom:30px; width:330px; 
-        background:#fff; padding:28px; border:1px solid #000; z-index:3000; 
-    }
+    /* 하단 조작 패널 */
+    #panel { position:fixed; left:30px; bottom:30px; width:330px; background:#fff; padding:28px; border:1px solid #000; z-index:3000; }
     .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
-    #ui-title { font-size: 14px; letter-spacing: -0.5px; font-weight: 900; text-transform: uppercase; } 
-    .lang-switcher { font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 1.5px solid #000; }
+    #ui-title { font-size: 18px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
+    .lang-switcher { font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
 
-    #status { font-size: 10px; color: #aaa; margin-bottom: 20px; display: block; }
+    #status { font-size: 11px; color: #999; margin-bottom: 20px; display: block; font-weight: 500; }
     #tol { width:100%; margin:15px 0; -webkit-appearance:none; background:#000; height:1.5px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:#00ff00; border:2px solid #000; cursor:pointer; }
 </style>
@@ -158,7 +124,7 @@
     </div>
     <div id="status">SYNCED WITH GOOGLE SHEETS</div>
     <div style="margin-top:10px;">
-        <label style="font-size: 11px; font-weight: bold;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
+        <label style="font-size: 12px; font-weight: 600;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
         <input type="range" min="1" max="100" value="30" id="tol">
     </div>
 </div>
@@ -180,15 +146,11 @@ let db = [];
 let isDown = false;
 let startX, startY;
 
-// [수정] 복잡한 문장도 깨지지 않게 파싱하는 고성능 CSV 파서
+// [고성능 CSV 파서] 데이터 유실 완전 방지
 function parseCSV(text) {
-    const result = [];
-    let row = [];
-    let field = "";
-    let inQuotes = false;
+    const result = []; let row = []; let field = ""; let inQuotes = false;
     for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const nextChar = text[i + 1];
+        const char = text[i]; const nextChar = text[i + 1];
         if (inQuotes) {
             if (char === '"' && nextChar === '"') { field += '"'; i++; }
             else if (char === '"') { inQuotes = false; }
@@ -197,12 +159,7 @@ function parseCSV(text) {
             if (char === '"') { inQuotes = true; }
             else if (char === ',') { row.push(field); field = ""; }
             else if (char === '\n' || char === '\r') {
-                if (field || row.length > 0) {
-                    row.push(field);
-                    result.push(row);
-                    field = "";
-                    row = [];
-                }
+                if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; }
                 if (char === '\r' && nextChar === '\n') i++;
             } else { field += char; }
         }
@@ -222,19 +179,14 @@ async function init() {
         db = rows.slice(1).map(row => {
             let rVal = parseFloat(row[idx.ratio]);
             return { 
-                name: row[idx.name], 
-                image: row[idx.image], 
-                point_kr: row[idx.point], 
+                name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], 
                 point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], 
-                level: row[idx.level], 
-                time: row[idx.time], 
-                ratio: rVal, 
-                normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, 
-                link: (idx.link !== -1) ? row[idx.link] : "" 
+                level: row[idx.level], time: row[idx.time], ratio: rVal, 
+                normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" 
             };
         }).filter(item => item.image && !isNaN(item.normRatio));
         updateUI();
-    } catch (e) { console.error(e); document.getElementById("status").innerHTML = `OFFLINE`; }
+    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
 }
 init();
 
@@ -270,7 +222,7 @@ stage.addEventListener("mousemove", (e) => {
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `R: 1:${currentR.toFixed(2)}`;
+    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
 });
 stage.addEventListener("mouseup", (e) => {
     if(!isDown) return; isDown = false; dragBox.style.display = "none";
@@ -287,7 +239,7 @@ function createResultBox(x, y, w, h, userRatio) {
     const tVal = Number(document.getElementById("tol").value) / 100;
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     if (results.length > 0) {
-        box.innerHTML = `<div class="box-header"><span>RATIO 1:${userRatio.toFixed(1)}</span><span>${results.length} UNITS</span></div>
+        box.innerHTML = `<div class="box-header"><span>ratio 1:${userRatio.toFixed(1)}</span><span>${results.length} units</span></div>
             <div class="image-list">${results.map(item => `
                 <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
                     <img src="${ASSET_PATH + item.image}" class="result-img" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='">
@@ -311,9 +263,15 @@ function refreshDetailContent() {
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
 
-    const baseSize = 420; const r = item.ratio || 1;
-    document.getElementById("detailPointBox").style.width = (r >= 1 ? baseSize : baseSize * r) + "px";
-    document.getElementById("detailPointBox").style.height = (r >= 1 ? baseSize / r : baseSize) + "px";
+    // [비율 반영] 박스 크기 자동 계산
+    const baseArea = 180000; 
+    let r = parseFloat(item.ratio) || 1;
+    let targetW = Math.sqrt(baseArea * r);
+    let targetH = baseArea / targetW;
+
+    const boxEl = document.getElementById("detailPointBox");
+    boxEl.style.width = Math.max(targetW, 350) + "px";
+    boxEl.style.height = Math.max(targetH, 200) + "px";
 
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { 
