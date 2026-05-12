@@ -12,7 +12,6 @@
     
     body { 
         background: #ffffff; 
-        /* 영문은 Barlow, 한글은 Pretendard를 기본으로 설정 */
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
@@ -41,7 +40,7 @@
     .result-img { height: calc(100% - 20px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     .item-name { font-size: 11px; margin-top: 8px; color: #000; text-transform: lowercase; font-weight: 400; letter-spacing: 0.01em; }
 
-    /* --- 상세 화면 (스케일 및 한글 타이포 최적화) --- */
+    /* --- 상세 화면 --- */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
@@ -56,22 +55,24 @@
         letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
         text-transform: lowercase;
     }
-    #detailName:hover { color: hwb(120 0% 0%); }
+    #detailName:hover { color: #00ff00; }
 
-    /* [수정] 한글 타이포: 자간을 넓히고(0.05em) 맑은 서체 적용 */
+    /* [수정] 박스 배경색을 형광 초록 반투명으로 변경 및 한글 타이포 최적화 */
     #detailPointBox { 
         border: 1px solid #000; padding: 35px; 
         display: flex; align-items: center; justify-content: center; 
         text-align: center; 
-        font-size: 15px; /* 미세하게 작게 조정하여 밀도감 상향 */
-        line-height: 1.8; /* 행간을 넓혀 호흡 조절 */
-        background: rgba(255, 255, 255, 0.92); 
+        font-size: 15px;
+        line-height: 1.8; 
+        /* [핵심] 형광 초록의 아주 투명도 낮은 버전 적용 */
+        background: rgba(0, 255, 0, 0.05); 
         transition: width 0.4s ease, height 0.4s ease; 
         overflow-y: auto; z-index: 5; 
-        font-weight: 300; /* 한글 획을 얇게 하여 세련미 부각 */
+        font-weight: 300; /* 한글 서체를 가늘게 하여 세련미 부각 */
         max-width: 80vw; max-height: 50vh;
-        letter-spacing: 0.05em; /* [핵심] 자간을 넓혀 시원하게 변경 */
-        word-break: keep-all; /* 단어가 잘리지 않게 조정 */
+        letter-spacing: 0.05em; /* 자간을 시원하게 넓힘 */
+        word-break: keep-all;
+        backdrop-filter: blur(2px); /* 배경 이미지와 섞일 때의 몽환적인 느낌 추가 */
     }
 
     #detailMeta { margin-top: 25px; font-size: 13px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
@@ -116,6 +117,7 @@
 </div>
 
 <script>
+// [기존의 모든 JavaScript 로직 유지]
 let currentLang = 'KR';
 let currentActiveItem = null;
 const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" }, EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" } };
@@ -189,6 +191,7 @@ function refreshDetailContent() {
     nameEl.innerText = item.name;
     nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
+    
     const bgImg = document.getElementById("detailBgImg");
     bgImg.src = ASSET_PATH + item.image;
     bgImg.style.display = 'block';
