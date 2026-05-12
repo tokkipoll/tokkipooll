@@ -12,34 +12,25 @@
     
     body { 
         background: #ffffff; 
-        /* [추가] 모눈종이 그리드 디자인 */
-        background-image: 
-            linear-gradient(#f2f2f2 1px, transparent 1px),
-            linear-gradient(90deg, #f2f2f2 1px, transparent 1px);
-        background-size: 20px 20px; /* 모눈 한 칸의 크기 */
+        background-image: linear-gradient(#f2f2f2 1px, transparent 1px), linear-gradient(90deg, #f2f2f2 1px, transparent 1px);
+        background-size: 20px 20px;
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
     }
 
-    /* stage가 최상위에서 이벤트를 받음 */
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
 
-    /* 상단 인터페이스 (클릭 관통되도록 설정) */
     #guide-left {
         position: fixed; top: 25px; left: 30px;
         font-family: 'Barlow Condensed', sans-serif;
         font-size: 14px; font-weight: 500; color: #000;
         letter-spacing: 0.15em; text-transform: uppercase;
         pointer-events: none; z-index: 100;
-        animation: blink 2s infinite; /* 처음 진입 시 유도 효과 */
+        animation: blink 2s infinite;
     }
-
-    @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     #coords {
         position: fixed; top: 25px; right: 30px;
@@ -51,17 +42,11 @@
 
     /* 드래그 가이드 */
     #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
-    #ratioTag { 
-        position:absolute; top:-25px; left:0; background:#00ff00; color:#000; 
-        font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap;
-    }
+    #ratioTag { position:absolute; top:-25px; left:0; background:#00ff00; color:#000; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
     /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
-    .box-header { 
-        height: 20px; border-bottom: none; display: flex; align-items: center; justify-content: space-between; 
-        padding: 0 8px; font-size: 11px; background: #fff; font-weight: 500; letter-spacing: 0.02em; color: #999;
-    }
+    .box-header { height: 20px; border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 11px; background: #fff; font-weight: 500; letter-spacing: 0.02em; color: #999; }
     .image-list { flex: 1; display: flex; overflow-x: auto; padding: 12px; gap: 15px; align-items: center; }
     .image-list::-webkit-scrollbar { height: 2px; }
     .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
@@ -69,38 +54,26 @@
     .result-img { height: calc(100% - 20px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     .item-name { font-size: 11px; margin-top: 8px; color: #000; text-transform: lowercase; font-weight: 400; letter-spacing: 0.01em; }
 
-    /* 상세 화면 */
+    /* --- 상세 화면 --- */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
     }
-    #detailBgImg { 
-        position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; 
-        z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; 
-        top: 50%; left: 50%; transform: translate(-50%, -50%);
-    }
-    #detailName { 
-        font-size: 42px; font-weight: 500; margin-bottom: 25px; text-decoration: none; 
-        letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000;
-        text-transform: lowercase;
-    }
+    #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    #detailName { font-size: 42px; font-weight: 500; margin-bottom: 25px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
     #detailName:hover { color: #00ff00; }
 
-    #detailPointBox { 
-        border: 1px solid #000; padding: 35px; 
-        display: flex; align-items: center; justify-content: center; 
-        text-align: center; font-size: 15px; line-height: 1.8; 
-        background: rgba(0, 255, 0, 0.05); 
-        transition: width 0.4s ease, height 0.4s ease; 
-        overflow-y: auto; z-index: 5; 
-        font-weight: 300; 
-        max-width: 80vw; max-height: 50vh;
-        letter-spacing: 0.05em; word-break: keep-all;
-        backdrop-filter: blur(2px);
-    }
-
+    #detailPointBox { border: 1px solid #000; padding: 35px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 15px; line-height: 1.8; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 80vw; max-height: 50vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
     #detailMeta { margin-top: 25px; font-size: 13px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
     #closeDetail { position: absolute; top: 30px; right: 30px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
+
+    /* [추가] 상세페이지 전용 언어 스위처 */
+    #detailLangToggle {
+        position: absolute; bottom: 35px; right: 40px;
+        font-size: 11px; font-weight: 600; cursor: pointer;
+        border-bottom: 1.2px solid #000; z-index: 100;
+        letter-spacing: 0.05em;
+    }
 
     /* 하단 조작 패널 */
     #panel { position:fixed; left:25px; bottom:25px; width:280px; background:#fff; padding:20px; border:1px solid #000; z-index:3000; }
@@ -129,6 +102,7 @@
     <div id="detailMeta">
         <span id="detailTime"></span> • <span id="detailLevel"></span>
     </div>
+    <div id="detailLangToggle" onclick="toggleLang()">ENG / KR</div>
 </div>
 
 <div id="panel">
@@ -198,27 +172,9 @@ const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
 document.getElementById("tol").addEventListener("input", (e) => { document.getElementById("tolText").innerText = e.target.value + "%"; });
 
-stage.addEventListener("mousedown", (e) => {
-    isDown = true; startX = e.clientX; startY = e.clientY;
-    dragBox.style.display = "block";
-    dragBox.style.width = "0px"; dragBox.style.height = "0px";
-});
-
-stage.addEventListener("mousemove", (e) => {
-    if(!isDown) return;
-    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
-    dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
-    const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
-});
-
-stage.addEventListener("mouseup", (e) => {
-    if(!isDown) return; isDown = false; dragBox.style.display = "none";
-    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
-    if(w < 20 || h < 20) return;
-    createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
-});
+stage.addEventListener("mousedown", (e) => { isDown = true; startX = e.clientX; startY = e.clientY; dragBox.style.display = "block"; dragBox.style.width = "0px"; dragBox.style.height = "0px"; });
+stage.addEventListener("mousemove", (e) => { if(!isDown) return; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); dragBox.style.width = w + "px"; dragBox.style.height = h + "px"; dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px"; const currentR = w > h ? (w/h) : (h/w); document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`; });
+stage.addEventListener("mouseup", (e) => { if(!isDown) return; isDown = false; dragBox.style.display = "none"; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); if(w < 20 || h < 20) return; createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w)); });
 
 function createResultBox(x, y, w, h, userRatio) {
     const box = document.createElement("div"); box.className = "traceBox"; Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' }); stage.appendChild(box);
@@ -254,7 +210,7 @@ function refreshDetailContent() {
     boxEl.style.height = Math.max(targetH, 180) + "px";
 
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
-    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD"); }
+    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
