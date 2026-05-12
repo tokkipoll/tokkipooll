@@ -12,37 +12,48 @@
     
     body { 
         background: #ffffff; 
+        /* [추가] 모눈종이 그리드 디자인 */
+        background-image: 
+            linear-gradient(#f2f2f2 1px, transparent 1px),
+            linear-gradient(90deg, #f2f2f2 1px, transparent 1px);
+        background-size: 20px 20px; /* 모눈 한 칸의 크기 */
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
     }
 
-    /* stage가 이벤트를 직접 받도록 설정 */
+    /* stage가 최상위에서 이벤트를 받음 */
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
 
-    /* [수정] 상단 인터페이스: pointer-events none으로 드래그 방해 금지 */
+    /* 상단 인터페이스 (클릭 관통되도록 설정) */
     #guide-left {
         position: fixed; top: 25px; left: 30px;
         font-family: 'Barlow Condensed', sans-serif;
         font-size: 14px; font-weight: 500; color: #000;
         letter-spacing: 0.15em; text-transform: uppercase;
         pointer-events: none; z-index: 100;
+        animation: blink 2s infinite; /* 처음 진입 시 유도 효과 */
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
     }
 
     #coords {
         position: fixed; top: 25px; right: 30px;
         font-family: 'Space Mono', monospace;
-        font-size: 10px; color: #ccc;
+        font-size: 10px; color: #bbb;
         pointer-events: none; z-index: 100;
         letter-spacing: 0.1em;
     }
 
     /* 드래그 가이드 */
-    #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
+    #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { 
         position:absolute; top:-25px; left:0; background:#00ff00; color:#000; 
-        font-size:10px; font-weight:600; padding:2px 6px; 
+        font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap;
     }
 
     /* 결과 박스 */
@@ -141,12 +152,10 @@ const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?forma
 const ASSET_PATH = "foldingpapers/assets/"; 
 let db = []; let isDown = false; let startX, startY;
 
-// 좌표 실시간 업데이트
 window.addEventListener('mousemove', (e) => {
     const x = String(e.clientX).padStart(4, '0');
     const y = String(e.clientY).padStart(4, '0');
-    const coordsEl = document.getElementById('coords');
-    if(coordsEl) coordsEl.innerText = `x: ${x}, y: ${y}`;
+    document.getElementById('coords').innerText = `x: ${x}, y: ${y}`;
 });
 
 function parseCSV(text) {
@@ -190,7 +199,6 @@ const dragBox = document.getElementById("dragBox");
 document.getElementById("tol").addEventListener("input", (e) => { document.getElementById("tolText").innerText = e.target.value + "%"; });
 
 stage.addEventListener("mousedown", (e) => {
-    // stage 본체 혹은 coords 등 투명 요소 클릭 시 드래그 시작
     isDown = true; startX = e.clientX; startY = e.clientY;
     dragBox.style.display = "block";
     dragBox.style.width = "0px"; dragBox.style.height = "0px";
@@ -198,10 +206,9 @@ stage.addEventListener("mousedown", (e) => {
 
 stage.addEventListener("mousemove", (e) => {
     if(!isDown) return;
-    const currentX = e.clientX, currentY = e.clientY;
-    const w = Math.abs(currentX - startX), h = Math.abs(currentY - startY);
+    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
-    dragBox.style.left = Math.min(currentX, startX) + "px"; dragBox.style.top = Math.min(currentY, startY) + "px";
+    dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px";
     const currentR = w > h ? (w/h) : (h/w);
     document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
 });
