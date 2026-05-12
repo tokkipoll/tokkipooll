@@ -20,20 +20,11 @@
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* [추가] 상단 중앙 가이드 문구 */
-    #guide-text {
-        position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
-        font-family: 'Barlow Condensed', sans-serif;
-        font-size: 14px; font-weight: 500; color: #000;
-        letter-spacing: 0.15em; text-transform: uppercase;
-        pointer-events: none; z-index: 4000;
-    }
-
-    /* 우측 상단 실시간 좌표 표시기 */
+    /* [추가] 우측 상단 실시간 좌표 표시기 */
     #coords {
-        position: fixed; top: 25px; right: 30px;
+        position: fixed; top: 20px; right: 25px;
         font-family: 'Space Mono', monospace;
-        font-size: 10px; color: #ccc;
+        font-size: 10px; color: #bbb;
         pointer-events: none; z-index: 5000;
         letter-spacing: 0.1em; text-transform: lowercase;
     }
@@ -45,7 +36,7 @@
         font-size:10px; font-weight:600; padding:2px 6px; 
     }
 
-    /* 결과 박스 (헤더 선 제거 및 텍스트 톤다운) */
+    /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { 
         height: 20px; border-bottom: none; display: flex; align-items: center; justify-content: space-between; 
@@ -58,7 +49,7 @@
     .result-img { height: calc(100% - 20px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
     .item-name { font-size: 11px; margin-top: 8px; color: #000; text-transform: lowercase; font-weight: 400; letter-spacing: 0.01em; }
 
-    /* --- 상세 화면 (스케일 및 무드 최적화) --- */
+    /* 상세 화면 */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
         display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
@@ -103,7 +94,6 @@
 </head>
 <body>
 
-<div id="guide-text">drag to define ratio</div>
 <div id="coords">x: 0000, y: 0000</div>
 
 <div id="stage">
@@ -133,7 +123,6 @@
 </div>
 
 <script>
-// [JavaScript 로직]
 let currentLang = 'KR';
 let currentActiveItem = null;
 const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" }, EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" } };
@@ -142,7 +131,7 @@ const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?forma
 const ASSET_PATH = "foldingpapers/assets/"; 
 let db = []; let isDown = false; let startX, startY;
 
-// 실시간 좌표 및 가이드 문구 관련 인터랙션
+// [추가] 실시간 좌표 업데이트 로직
 window.addEventListener('mousemove', (e) => {
     const x = String(e.clientX).padStart(4, '0');
     const y = String(e.clientY).padStart(4, '0');
@@ -209,3 +198,30 @@ function createResultBox(x, y, w, h, userRatio) {
 
 function openDetail(encoded) { currentActiveItem = JSON.parse(decodeURIComponent(atob(encoded))); refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; }
 function refreshDetailContent() {
+    const item = currentActiveItem;
+    const nameEl = document.getElementById("detailName");
+    nameEl.innerText = item.name;
+    nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
+    document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
+    const bgImg = document.getElementById("detailBgImg");
+    bgImg.src = ASSET_PATH + item.image;
+    bgImg.style.display = 'block';
+
+    const baseArea = 120000; 
+    let r = parseFloat(item.ratio) || 1;
+    let targetW = Math.sqrt(baseArea * r);
+    let targetH = baseArea / targetW;
+    const boxEl = document.getElementById("detailPointBox");
+    boxEl.style.width = Math.max(targetW, 280) + "px";
+    boxEl.style.height = Math.max(targetH, 180) + "px";
+
+    let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
+    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
+    document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
+}
+function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
+function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
+window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
+</script>
+</body>
+</html>
