@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ORIGAMI ARCHIVE.V1</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -18,6 +19,8 @@
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
+        /* 모바일 드래그 시 화면 밀림 방지 */
+        touch-action: none;
     }
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
@@ -47,7 +50,7 @@
     /* 결과 박스 */
     .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
     .box-header { height: 20px; border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 11px; background: #fff; font-weight: 500; letter-spacing: 0.02em; color: #999; }
-    .image-list { flex: 1; display: flex; overflow-x: auto; padding: 12px; gap: 15px; align-items: center; }
+    .image-list { flex: 1; display: flex; overflow-x: auto; padding: 12px; gap: 15px; align-items: center; -webkit-overflow-scrolling: touch; }
     .image-list::-webkit-scrollbar { height: 2px; }
     .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
     .item-wrapper { height: 100%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
@@ -60,29 +63,27 @@
         display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
     }
     #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    #detailName { font-size: 42px; font-weight: 500; margin-bottom: 25px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
+    #detailName { font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
     #detailName:hover { color: #00ff00; }
 
-    #detailPointBox { border: 1px solid #000; padding: 35px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 15px; line-height: 1.8; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 80vw; max-height: 50vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
-    #detailMeta { margin-top: 25px; font-size: 13px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
-    #closeDetail { position: absolute; top: 30px; right: 30px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
+    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
+    #detailMeta { margin-top: 20px; font-size: 12px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
+    #closeDetail { position: absolute; top: 25px; right: 25px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
 
-    /* [추가] 상세페이지 전용 언어 스위처 */
     #detailLangToggle {
-        position: absolute; bottom: 35px; right: 40px;
+        position: absolute; bottom: 25px; right: 30px;
         font-size: 11px; font-weight: 600; cursor: pointer;
         border-bottom: 1.2px solid #000; z-index: 100;
-        letter-spacing: 0.05em;
     }
 
-    /* 하단 조작 패널 */
-    #panel { position:fixed; left:25px; bottom:25px; width:280px; background:#fff; padding:20px; border:1px solid #000; z-index:3000; }
-    .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-    #ui-title { font-size: 15px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
+    /* 하단 조작 패널 (모바일 대응 너비 조정) */
+    #panel { position:fixed; left:20px; bottom:20px; width:calc(100% - 40px); max-width:280px; background:#fff; padding:15px; border:1px solid #000; z-index:3000; }
+    .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    #ui-title { font-size: 14px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
     .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
-    #status { font-size: 10px; color: #bbb; margin-bottom: 15px; display: block; font-weight: 500; }
+    #status { font-size: 9px; color: #bbb; margin-bottom: 10px; display: block; }
     #tol { width:100%; margin:8px 0; -webkit-appearance:none; background:#000; height:1.2px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; background:#00ff00; border:1.5px solid #000; cursor:pointer; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1.5px solid #000; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -126,12 +127,58 @@ const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?forma
 const ASSET_PATH = "foldingpapers/assets/"; 
 let db = []; let isDown = false; let startX, startY;
 
-window.addEventListener('mousemove', (e) => {
-    const x = String(e.clientX).padStart(4, '0');
-    const y = String(e.clientY).padStart(4, '0');
+// 좌표 업데이트 함수
+function updateCoords(xVal, yVal) {
+    const x = String(Math.round(xVal)).padStart(4, '0');
+    const y = String(Math.round(yVal)).padStart(4, '0');
     document.getElementById('coords').innerText = `x: ${x}, y: ${y}`;
-});
+}
 
+// 마우스 및 터치 통합 핸들러
+function handleStart(e) {
+    if(e.target !== stage) return;
+    isDown = true;
+    const pos = e.touches ? e.touches[0] : e;
+    startX = pos.clientX; startY = pos.clientY;
+    dragBox.style.display = "block";
+    dragBox.style.width = "0px"; dragBox.style.height = "0px";
+}
+
+function handleMove(e) {
+    if(!isDown) return;
+    const pos = e.touches ? e.touches[0] : e;
+    updateCoords(pos.clientX, pos.clientY);
+    const w = Math.abs(pos.clientX - startX), h = Math.abs(pos.clientY - startY);
+    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
+    dragBox.style.left = Math.min(pos.clientX, startX) + "px"; dragBox.style.top = Math.min(pos.clientY, startY) + "px";
+    const currentR = w > h ? (w/h) : (h/w);
+    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
+}
+
+function handleEnd(e) {
+    if(!isDown) return; isDown = false;
+    const currentW = parseInt(dragBox.style.width);
+    const currentH = parseInt(dragBox.style.height);
+    const left = parseInt(dragBox.style.left);
+    const top = parseInt(dragBox.style.top);
+    dragBox.style.display = "none";
+    if(currentW < 20 || currentH < 20) return;
+    createResultBox(left, top, currentW, currentH, currentW > currentH ? (currentW/currentH) : (currentH/currentW));
+}
+
+// 이벤트 리스너 등록 (마우스 + 터치)
+stage.addEventListener("mousedown", handleStart);
+window.addEventListener("mousemove", (e) => {
+    if(!isDown) updateCoords(e.clientX, e.clientY);
+    handleMove(e);
+});
+window.addEventListener("mouseup", handleEnd);
+
+stage.addEventListener("touchstart", handleStart, {passive: false});
+window.addEventListener("touchmove", handleMove, {passive: false});
+window.addEventListener("touchend", handleEnd);
+
+// CSV 파서 및 초기화 로직 (동일)
 function parseCSV(text) {
     const result = []; let row = []; let field = ""; let inQuotes = false;
     for (let i = 0; i < text.length; i++) {
@@ -168,14 +215,6 @@ function updateUI() {
     document.getElementById("status").innerHTML = `● ${t.status}`;
 }
 
-const stage = document.getElementById("stage");
-const dragBox = document.getElementById("dragBox");
-document.getElementById("tol").addEventListener("input", (e) => { document.getElementById("tolText").innerText = e.target.value + "%"; });
-
-stage.addEventListener("mousedown", (e) => { isDown = true; startX = e.clientX; startY = e.clientY; dragBox.style.display = "block"; dragBox.style.width = "0px"; dragBox.style.height = "0px"; });
-stage.addEventListener("mousemove", (e) => { if(!isDown) return; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); dragBox.style.width = w + "px"; dragBox.style.height = h + "px"; dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px"; const currentR = w > h ? (w/h) : (h/w); document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`; });
-stage.addEventListener("mouseup", (e) => { if(!isDown) return; isDown = false; dragBox.style.display = "none"; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); if(w < 20 || h < 20) return; createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w)); });
-
 function createResultBox(x, y, w, h, userRatio) {
     const box = document.createElement("div"); box.className = "traceBox"; Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' }); stage.appendChild(box);
     const tVal = Number(document.getElementById("tol").value) / 100;
@@ -201,13 +240,13 @@ function refreshDetailContent() {
     bgImg.src = ASSET_PATH + item.image;
     bgImg.style.display = 'block';
 
-    const baseArea = 120000; 
+    const baseArea = window.innerWidth < 600 ? 80000 : 120000; 
     let r = parseFloat(item.ratio) || 1;
     let targetW = Math.sqrt(baseArea * r);
     let targetH = baseArea / targetW;
     const boxEl = document.getElementById("detailPointBox");
-    boxEl.style.width = Math.max(targetW, 280) + "px";
-    boxEl.style.height = Math.max(targetH, 180) + "px";
+    boxEl.style.width = Math.max(targetW, 250) + "px";
+    boxEl.style.height = Math.max(targetH, 150) + "px";
 
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
