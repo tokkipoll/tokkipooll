@@ -18,15 +18,24 @@
         -webkit-font-smoothing: antialiased;
     }
 
-    #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
+    /* stage가 이벤트를 직접 받도록 설정 */
+    #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
 
-    /* [추가] 우측 상단 실시간 좌표 표시기 */
+    /* [수정] 상단 인터페이스: pointer-events none으로 드래그 방해 금지 */
+    #guide-left {
+        position: fixed; top: 25px; left: 30px;
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 14px; font-weight: 500; color: #000;
+        letter-spacing: 0.15em; text-transform: uppercase;
+        pointer-events: none; z-index: 100;
+    }
+
     #coords {
-        position: fixed; top: 20px; right: 25px;
+        position: fixed; top: 25px; right: 30px;
         font-family: 'Space Mono', monospace;
-        font-size: 10px; color: #bbb;
-        pointer-events: none; z-index: 5000;
-        letter-spacing: 0.1em; text-transform: lowercase;
+        font-size: 10px; color: #ccc;
+        pointer-events: none; z-index: 100;
+        letter-spacing: 0.1em;
     }
 
     /* 드래그 가이드 */
@@ -52,7 +61,7 @@
     /* 상세 화면 */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
-        display: none; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; 
+        display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
     }
     #detailBgImg { 
         position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; 
@@ -86,7 +95,7 @@
     #panel { position:fixed; left:25px; bottom:25px; width:280px; background:#fff; padding:20px; border:1px solid #000; z-index:3000; }
     .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
     #ui-title { font-size: 15px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
-    .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; }
+    .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
     #status { font-size: 10px; color: #bbb; margin-bottom: 15px; display: block; font-weight: 500; }
     #tol { width:100%; margin:8px 0; -webkit-appearance:none; background:#000; height:1.2px; }
     #tol::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; background:#00ff00; border:1.5px solid #000; cursor:pointer; }
@@ -94,6 +103,7 @@
 </head>
 <body>
 
+<div id="guide-left">drag to define ratio</div>
 <div id="coords">x: 0000, y: 0000</div>
 
 <div id="stage">
@@ -131,11 +141,12 @@ const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?forma
 const ASSET_PATH = "foldingpapers/assets/"; 
 let db = []; let isDown = false; let startX, startY;
 
-// [추가] 실시간 좌표 업데이트 로직
+// 좌표 실시간 업데이트
 window.addEventListener('mousemove', (e) => {
     const x = String(e.clientX).padStart(4, '0');
     const y = String(e.clientY).padStart(4, '0');
-    document.getElementById('coords').innerText = `x: ${x}, y: ${y}`;
+    const coordsEl = document.getElementById('coords');
+    if(coordsEl) coordsEl.innerText = `x: ${x}, y: ${y}`;
 });
 
 function parseCSV(text) {
@@ -178,9 +189,29 @@ const stage = document.getElementById("stage");
 const dragBox = document.getElementById("dragBox");
 document.getElementById("tol").addEventListener("input", (e) => { document.getElementById("tolText").innerText = e.target.value + "%"; });
 
-stage.addEventListener("mousedown", (e) => { if(e.target !== stage) return; isDown = true; startX = e.clientX; startY = e.clientY; dragBox.style.display = "block"; });
-stage.addEventListener("mousemove", (e) => { if(!isDown) return; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); dragBox.style.width = w + "px"; dragBox.style.height = h + "px"; dragBox.style.left = Math.min(e.clientX, startX) + "px"; dragBox.style.top = Math.min(e.clientY, startY) + "px"; const currentR = w > h ? (w/h) : (h/w); document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`; });
-stage.addEventListener("mouseup", (e) => { if(!isDown) return; isDown = false; dragBox.style.display = "none"; const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY); if(w < 25 || h < 25) return; createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w)); });
+stage.addEventListener("mousedown", (e) => {
+    // stage 본체 혹은 coords 등 투명 요소 클릭 시 드래그 시작
+    isDown = true; startX = e.clientX; startY = e.clientY;
+    dragBox.style.display = "block";
+    dragBox.style.width = "0px"; dragBox.style.height = "0px";
+});
+
+stage.addEventListener("mousemove", (e) => {
+    if(!isDown) return;
+    const currentX = e.clientX, currentY = e.clientY;
+    const w = Math.abs(currentX - startX), h = Math.abs(currentY - startY);
+    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
+    dragBox.style.left = Math.min(currentX, startX) + "px"; dragBox.style.top = Math.min(currentY, startY) + "px";
+    const currentR = w > h ? (w/h) : (h/w);
+    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
+});
+
+stage.addEventListener("mouseup", (e) => {
+    if(!isDown) return; isDown = false; dragBox.style.display = "none";
+    const w = Math.abs(e.clientX - startX), h = Math.abs(e.clientY - startY);
+    if(w < 20 || h < 20) return;
+    createResultBox(Math.min(e.clientX, startX), Math.min(e.clientY, startY), w, h, w > h ? (w/h) : (h/w));
+});
 
 function createResultBox(x, y, w, h, userRatio) {
     const box = document.createElement("div"); box.className = "traceBox"; Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' }); stage.appendChild(box);
@@ -216,7 +247,7 @@ function refreshDetailContent() {
     boxEl.style.height = Math.max(targetH, 180) + "px";
 
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
-    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
+    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD"); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 }
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
