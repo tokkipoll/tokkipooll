@@ -115,7 +115,6 @@ const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
-const colorPalette = ['rgba(235, 87, 87, 0.8)', 'rgba(242, 153, 74, 0.8)', 'rgba(242, 201, 76, 0.8)', 'rgba(39, 174, 96, 0.8)', 'rgba(45, 156, 219, 0.8)', 'rgba(155, 89, 182, 0.8)'];
 
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
@@ -222,7 +221,8 @@ function createResultBox(x, y, w, h, userRatio) {
     if (results.length > 0) {
         const box = document.createElement("div");
         box.className = "resultContainer";
-        box.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        // 여기서 색상을 하나로 고정 (예: 연한 회색 혹은 원하시는 색상 코드 입력)
+        box.style.backgroundColor = "rgba(240, 240, 240, 0.8)";
         Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
         stage.appendChild(box);
         
