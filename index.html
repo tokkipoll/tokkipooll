@@ -27,18 +27,18 @@
     /* 타이틀 및 패널 폰트 적용 */
     #guide-left, #ui-title, #detailName { font-family: 'Savate', sans-serif; }
 
-    #dragBox { position:absolute; border:1px solid #ffffff; background: rgba(0, 0, 0, 0.05); display:none; pointer-events:none; z-index:1000; }
+    #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 0, 0, 0.05); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; font-family: 'Space Mono', monospace; }
 
     .resultContainer { position:absolute; z-index: 50; mix-blend-mode: multiply; }
     .scattered-img { position: absolute; object-fit: contain; cursor: grab; z-index: 51; filter: grayscale(0.2) contrast(1.1); }
 
     /* 상세 화면 */
-    #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; }
+    #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; }
     #detailName { font-size: 60px; margin-bottom: 20px; cursor: pointer; color: #ffffff; text-transform: uppercase; }
-    #detailPointBox { border: 1px solid #ffffff; padding: 25px; text-align: center; font-size: 14px; background: rgba(255, 255, 255, 0.05); z-index: 5; max-width: 90vw; backdrop-filter: blur(2px); color: #ffffff; }
+    #detailPointBox { border: 1px solid #ffffff; padding: 25px; text-align: center; font-size: 14px; background: rgba(255, 255, 255, 0.05); z-index: 5; max-width: 90vw; backdrop-filter: blur(2px); color: #ffffff; cursor: default; }
     
-    /* 패널 레이아웃 변경 (테두리 완전히 제거) */
+    /* 패널 레이아웃 변경 (테두리 완전 제거) */
     #panel { 
         position:fixed; left:0; bottom:0; width:300px; padding:20px; 
         background:#ffffff; z-index:3000; 
@@ -53,9 +53,9 @@
 <div id="coords">x: 0000, y: 0000</div>
 <div id="stage"><div id="dragBox"><div id="ratioTag">1:1.00</div></div></div>
 
-<div id="detailView">
-    <div id="closeDetail" onclick="closeDetail()" style="position: absolute; top: 25px; right: 25px; cursor: pointer; border-bottom: 1px solid #fff;">CLOSE</div>
-    <div id="detailName" onclick="goToLink()"></div>
+<div id="detailView" onclick="closeDetail()">
+    <div id="closeDetail" style="position: absolute; top: 25px; right: 25px; cursor: pointer; border-bottom: 1px solid #fff;">CLOSE</div>
+    <div id="detailName" onclick="goToLink(event)"></div>
     <img id="detailBgImg" src="" onerror="this.style.display='none'" style="position: absolute; opacity: 0.1; max-width: 50vw;">
     <div id="detailPointBox" onclick="event.stopPropagation()"></div>
 </div>
@@ -83,7 +83,7 @@ document.addEventListener('mouseup', () => draggedImg = null);
 
 function handleStart(e) { if(e.target !== stage) return; isDown = true; const pos = e.touches ? e.touches[0] : e; startX = pos.clientX; startY = pos.clientY; dragBox.style.display = "block"; dragBox.style.width = "0px"; dragBox.style.height = "0px"; }
 function handleMove(e) { if(!isDown) return; const pos = e.touches ? e.touches[0] : e; const w = Math.abs(pos.clientX - startX), h = Math.abs(pos.clientY - startY); dragBox.style.width = w + "px"; dragBox.style.height = h + "px"; dragBox.style.left = Math.min(pos.clientX, startX) + "px"; dragBox.style.top = Math.min(pos.clientY, startY) + "px"; document.getElementById("ratioTag").innerHTML = `ratio 1:${(w>h?w/h:h/w).toFixed(2)}`; document.getElementById('coords').innerText = `x: ${String(Math.round(pos.clientX)).padStart(4, '0')}, y: ${String(Math.round(pos.clientY)).padStart(4, '0')}`; }
-function handleEnd(e) { if(!isDown) return; isDown = false; const w = parseInt(dragBox.style.width), h = parseInt(dragBox.style.height), l = parseInt(dragBox.style.left), t = parseInt(dragBox.style.top); dragBox.style.display = "none"; if(w < 20 || h < 20) return; createResultBox(l, t, w, h, w > h ? (w/h) : (h/w)); }
+function handleEnd(e) { if(!isDown) return; isDown = false; const w = parseInt(dragBox.width), h = parseInt(dragBox.height), l = parseInt(dragBox.style.left), t = parseInt(dragBox.style.top); dragBox.style.display = "none"; if(w < 20 || h < 20) return; createResultBox(l, t, w, h, w > h ? (w/h) : (h/w)); }
 
 stage.addEventListener("mousedown", handleStart);
 window.addEventListener("mousemove", handleMove);
@@ -96,7 +96,6 @@ function parseCSV(text) {
         if (inQuotes) { if (char === '"' && nextChar === '"') { field += '"'; i++; } else if (char === '"') { inQuotes = false; } else { field += char; } }
         else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(field); field = ""; } else if (char === '\n' || char === '\r') { if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; } if (char === '\r' && nextChar === '\n') i++; } else { field += char; } }
     }
-    if (field || row.length > 0) { row.push(field); result.push(row); }
     return result;
 }
 
@@ -114,9 +113,10 @@ async function init() {
     db = rows.slice(1).map(r => ({ name: r[0], image: r[1], ratio: parseFloat(r[2]), normRatio: parseFloat(r[2]) < 1 ? 1/parseFloat(r[2]) : parseFloat(r[2]), point_kr: r[3] })).filter(i => i.image);
 }
 init();
+
 function closeDetail() { document.getElementById("detailView").style.display = "none"; }
-function toggleLang() { /* 언어 전환 로직 */ }
-function goToLink() { /* 링크 이동 로직 */ }
+function goToLink(e) { e.stopPropagation(); /* 상세 페이지 이동 로직 */ }
+function toggleLang() { /* 언어 전환 */ }
 window.addEventListener("keydown", (e) => { if(e.code === "Space") { document.querySelectorAll(".resultContainer").forEach(el => el.remove()); document.querySelectorAll(".scattered-img").forEach(el => el.remove()); } });
 </script>
 </body>
