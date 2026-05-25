@@ -45,17 +45,9 @@
     #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 - 불투명 설정 및 블렌드 적용 */
-    .resultContainer { 
-        position:absolute; 
-        z-index: 50; 
-        mix-blend-mode: multiply;
-    }
-    .scattered-img {
-        position: absolute;
-        width: 80px; height: 80px; object-fit: contain; cursor: grab;
-        z-index: 51;
-    }
+    /* 결과 박스 */
+    .resultContainer { position:absolute; z-index: 50; }
+    .scattered-img { position: absolute; object-fit: contain; cursor: grab; z-index: 51; }
 
     /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
@@ -111,12 +103,12 @@ const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
-const colorPalette = ['rgba(255, 95, 87, 1)', 'rgba(255, 159, 67, 1)', 'rgba(255, 230, 80, 1)', 'rgba(120, 224, 143, 1)', 'rgba(84, 160, 255, 1)', 'rgba(197, 108, 240, 1)'];
+const colorPalette = ['rgba(255, 95, 87, 0.6)', 'rgba(255, 159, 67, 0.6)', 'rgba(255, 230, 80, 0.6)', 'rgba(120, 224, 143, 0.6)', 'rgba(84, 160, 255, 0.6)', 'rgba(197, 108, 240, 0.6)'];
 
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
 
-// 이미지 이동 로직
+// 이미지 드래그 이동 로직
 document.addEventListener('mousedown', (e) => {
     if(e.target.classList.contains('scattered-img')) {
         draggedImg = e.target;
@@ -227,8 +219,10 @@ function createResultBox(x, y, w, h, userRatio) {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
             img.className = "scattered-img";
-            img.style.left = (x + Math.random() * (w - 80)) + 'px';
-            img.style.top = (y + Math.random() * (h - 80)) + 'px';
+            const size = Math.min(w * 0.3, 80);
+            img.style.width = size + 'px';
+            img.style.left = (x + Math.random() * (w - size)) + 'px';
+            img.style.top = (y + Math.random() * (h - size)) + 'px';
             img.onclick = (e) => { e.stopPropagation(); currentActiveItem = item; refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; };
             stage.appendChild(img);
         });
