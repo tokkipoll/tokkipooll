@@ -7,6 +7,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
+    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
@@ -40,17 +41,28 @@
         letter-spacing: 0.1em;
     }
 
+    /* 드래그 가이드 */
     #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 (이미지) */
-    .traceBox { 
+    /* 결과 박스 (여러 이미지 배치용 컨테이너) */
+    .resultContainer { 
         position:absolute; 
         border:1px solid rgba(0,0,0,0.2); 
         z-index: 50; 
         mix-blend-mode: multiply;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 5px;
+        gap: 5px;
+        overflow: hidden;
+    }
+    .resultContainer img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
         cursor: pointer;
-        object-fit: contain;
+        border: 1px solid rgba(0,0,0,0.1);
     }
 
     /* 상세 화면 */
@@ -196,14 +208,18 @@ function createResultBox(x, y, w, h, userRatio) {
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     
     if (results.length > 0) {
-        const item = results[0];
-        const img = document.createElement("img");
-        img.className = "traceBox";
-        img.src = ASSET_PATH + item.image;
-        img.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-        Object.assign(img.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
-        img.onclick = () => openDetail(btoa(encodeURIComponent(JSON.stringify(item))));
-        stage.appendChild(img);
+        const container = document.createElement("div");
+        container.className = "resultContainer";
+        container.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        Object.assign(container.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
+        
+        results.forEach(item => {
+            const img = document.createElement("img");
+            img.src = ASSET_PATH + item.image;
+            img.onclick = (e) => { e.stopPropagation(); openDetail(btoa(encodeURIComponent(JSON.stringify(item)))); };
+            container.appendChild(img);
+        });
+        stage.appendChild(container);
     }
 }
 
@@ -232,7 +248,7 @@ function refreshDetailContent() {
 }
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
-window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
+window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".resultContainer").forEach(el => el.remove()); });
 </script>
 </body>
 </html>
