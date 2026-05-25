@@ -45,24 +45,16 @@
     #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 (여러 이미지 배치용 컨테이너) */
-    .resultContainer { 
+    /* 결과 박스 - 배경만 남기고 내부 레이아웃 제거 */
+    .traceBox { 
         position:absolute; 
         border:1px solid rgba(0,0,0,0.2); 
         z-index: 50; 
         mix-blend-mode: multiply;
-        display: flex;
-        flex-wrap: wrap;
-        padding: 5px;
-        gap: 5px;
-        overflow: hidden;
     }
-    .resultContainer img {
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        cursor: pointer;
-        border: 1px solid rgba(0,0,0,0.1);
+    .scattered-img {
+        position: absolute;
+        width: 80px; height: 80px; object-fit: contain; cursor: pointer;
     }
 
     /* 상세 화면 */
@@ -208,18 +200,25 @@ function createResultBox(x, y, w, h, userRatio) {
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     
     if (results.length > 0) {
-        const container = document.createElement("div");
-        container.className = "resultContainer";
-        container.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-        Object.assign(container.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
+        // 배경 박스 생성
+        const box = document.createElement("div");
+        box.className = "traceBox";
+        box.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
+        stage.appendChild(box);
         
+        // 결과 이미지들을 랜덤하게 배치
         results.forEach(item => {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
+            img.className = "scattered-img";
+            const rx = Math.random() * (w - 80);
+            const ry = Math.random() * (h - 80);
+            img.style.left = (x + rx) + 'px';
+            img.style.top = (y + ry) + 'px';
             img.onclick = (e) => { e.stopPropagation(); openDetail(btoa(encodeURIComponent(JSON.stringify(item)))); };
-            container.appendChild(img);
+            stage.appendChild(img);
         });
-        stage.appendChild(container);
     }
 }
 
@@ -248,7 +247,7 @@ function refreshDetailContent() {
 }
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
-window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".resultContainer").forEach(el => el.remove()); });
+window.addEventListener("keydown", (e) => { if(e.code === "Space") { document.querySelectorAll(".traceBox").forEach(el => el.remove()); document.querySelectorAll(".scattered-img").forEach(el => el.remove()); } });
 </script>
 </body>
 </html>
