@@ -2,259 +2,102 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ORIGAMI ARCHIVE.V1</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <style>
-    /* --- 기초 디자인 --- */
-    * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
+    * { margin:0; padding:0; box-sizing:border-box; }
     
     body { 
-        background: #ffffff; 
-        background-image: linear-gradient(#f2f2f2 1px, transparent 1px), linear-gradient(90deg, #f2f2f2 1px, transparent 1px);
+        background-color: #f7f6f2; 
+        background-image: linear-gradient(#e0deda 0.5px, transparent 0.5px), linear-gradient(90deg, #e0deda 0.5px, transparent 0.5px);
         background-size: 20px 20px;
-        font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
-        overflow: hidden; 
-        color: #000;
-        -webkit-font-smoothing: antialiased;
-        /* 모바일 드래그 시 화면 밀림 방지 */
-        touch-action: none;
+        /* 타자기체 적용 */
+        font-family: 'Courier Prime', monospace; 
+        color: #2c2c2c;
+        overflow: hidden;
     }
 
-    #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
-
-    #guide-left {
-        position: fixed; top: 25px; left: 30px;
-        font-family: 'Barlow Condensed', sans-serif;
-        font-size: 14px; font-weight: 500; color: #000;
-        letter-spacing: 0.15em; text-transform: uppercase;
-        pointer-events: none; z-index: 100;
-        animation: blink 2s infinite;
-    }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-    #coords {
-        position: fixed; top: 25px; right: 30px;
-        font-family: 'Space Mono', monospace;
-        font-size: 10px; color: #bbb;
-        pointer-events: none; z-index: 100;
-        letter-spacing: 0.1em;
+    .traceBox {
+        mix-blend-mode: multiply; 
+        position:absolute;
+        pointer-events: none;
     }
 
-    /* 드래그 가이드 */
-    #dragBox { position:absolute; border:1px solid #00ff00; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
-    #ratioTag { position:absolute; top:-25px; left:0; background:#00ff00; color:#000; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
+    #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; }
 
-    /* 결과 박스 */
-    .traceBox { position:absolute; border:1px solid #000; background: #fff; z-index: 50; display: flex; flex-direction: column; }
-    .box-header { height: 20px; border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; font-size: 11px; background: #fff; font-weight: 500; letter-spacing: 0.02em; color: #999; }
-    .image-list { flex: 1; display: flex; overflow-x: auto; padding: 12px; gap: 15px; align-items: center; -webkit-overflow-scrolling: touch; }
-    .image-list::-webkit-scrollbar { height: 2px; }
-    .image-list::-webkit-scrollbar-thumb { background: #00ff00; }
-    .item-wrapper { height: 100%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-    .result-img { height: calc(100% - 20px); width: auto; object-fit: contain; border: 1px solid #f2f2f2; }
-    .item-name { font-size: 11px; margin-top: 8px; color: #000; text-transform: lowercase; font-weight: 400; letter-spacing: 0.01em; }
-
-    /* --- 상세 화면 --- */
-    #detailView { 
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; 
-        display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
-    }
-    #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    #detailName { font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
-    #detailName:hover { color: #00ff00; }
-
-    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
-    #detailMeta { margin-top: 20px; font-size: 12px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
-    #closeDetail { position: absolute; top: 25px; right: 25px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
-
-    #detailLangToggle {
-        position: absolute; bottom: 25px; right: 30px;
-        font-size: 11px; font-weight: 600; cursor: pointer;
-        border-bottom: 1.2px solid #000; z-index: 100;
+    #ui-title { 
+        position: fixed; top: 30px; left: 30px; 
+        font-size: 40px; font-weight: 700; line-height: 0.9;
+        text-transform: uppercase;
+        z-index: 100;
+        pointer-events: none;
     }
 
-    /* 하단 조작 패널 (모바일 대응 너비 조정) */
-    #panel { position:fixed; left:20px; bottom:20px; width:calc(100% - 40px); max-width:280px; background:#fff; padding:15px; border:1px solid #000; z-index:3000; }
-    .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    #ui-title { font-size: 14px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
-    .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
-    #status { font-size: 9px; color: #bbb; margin-bottom: 10px; display: block; }
-    #tol { width:100%; margin:8px 0; -webkit-appearance:none; background:#000; height:1.2px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1.5px solid #000; cursor:pointer; }
+    #panel { 
+        position:fixed; left:30px; bottom:30px; width:280px;
+        z-index:3000;
+        background: rgba(247, 246, 242, 0.8);
+        padding: 10px;
+        border: 1px solid #ccc;
+    }
+
+    #tol { width:100%; margin-top:10px; accent-color: #000; height: 2px; }
 </style>
 </head>
 <body>
 
-<div id="guide-left">drag to define ratio</div>
-<div id="coords">x: 0000, y: 0000</div>
+<h1 id="ui-title">ORIGAMI<br>ARCHIVE</h1>
 
-<div id="stage">
-    <div id="dragBox"><div id="ratioTag">1:1.00</div></div>
-</div>
-
-<div id="detailView">
-    <div id="closeDetail" onclick="closeDetail()">CLOSE</div>
-    <div id="detailName" onclick="goToLink()"></div>
-    <img id="detailBgImg" src="" onerror="this.style.display='none'">
-    <div id="detailPointBox" onclick="event.stopPropagation()"></div>
-    <div id="detailMeta">
-        <span id="detailTime"></span> • <span id="detailLevel"></span>
-    </div>
-    <div id="detailLangToggle" onclick="toggleLang()">ENG / KR</div>
-</div>
+<div id="stage"></div>
 
 <div id="panel">
-    <div class="panel-header">
-        <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1> 
-        <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
-    </div>
-    <div id="status">SYNCED WITH GOOGLE SHEETS</div>
-    <div style="margin-top:8px;">
-        <label style="font-size: 11px; font-weight: 600;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
-        <input type="range" min="1" max="100" value="30" id="tol">
-    </div>
+    <label style="font-size: 11px; font-weight: 700;">TOLERANCE / ADJUST</label>
+    <input type="range" min="1" max="100" value="30" id="tol">
 </div>
 
 <script>
-let currentLang = 'KR';
-let currentActiveItem = null;
-const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기" }, EN: { title: "ORIGAMI ARCHIVE.V1", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE" } };
-const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
-const ASSET_PATH = "foldingpapers/assets/"; 
-let db = []; let isDown = false; let startX, startY;
+    const stage = document.getElementById("stage");
+    let isDown = false;
+    let startX, startY;
 
-// 좌표 업데이트 함수
-function updateCoords(xVal, yVal) {
-    const x = String(Math.round(xVal)).padStart(4, '0');
-    const y = String(Math.round(yVal)).padStart(4, '0');
-    document.getElementById('coords').innerText = `x: ${x}, y: ${y}`;
-}
+    // 사진 속의 다채로운 컬러 팔레트 구성
+    const colors = [
+        'rgba(255, 50, 100, 0.5)',  // 핑크
+        'rgba(255, 120, 0, 0.5)',   // 오렌지
+        'rgba(220, 220, 0, 0.5)',   // 옐로우
+        'rgba(50, 180, 50, 0.5)',   // 그린
+        'rgba(0, 120, 220, 0.5)'    // 블루
+    ];
 
-// 마우스 및 터치 통합 핸들러
-function handleStart(e) {
-    if(e.target !== stage) return;
-    isDown = true;
-    const pos = e.touches ? e.touches[0] : e;
-    startX = pos.clientX; startY = pos.clientY;
-    dragBox.style.display = "block";
-    dragBox.style.width = "0px"; dragBox.style.height = "0px";
-}
+    stage.addEventListener("mousedown", (e) => {
+        isDown = true;
+        startX = e.clientX; startY = e.clientY;
+    });
 
-function handleMove(e) {
-    if(!isDown) return;
-    const pos = e.touches ? e.touches[0] : e;
-    updateCoords(pos.clientX, pos.clientY);
-    const w = Math.abs(pos.clientX - startX), h = Math.abs(pos.clientY - startY);
-    dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
-    dragBox.style.left = Math.min(pos.clientX, startX) + "px"; dragBox.style.top = Math.min(pos.clientY, startY) + "px";
-    const currentR = w > h ? (w/h) : (h/w);
-    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
-}
+    stage.addEventListener("mouseup", (e) => {
+        if(!isDown) return;
+        isDown = false;
+        
+        const w = Math.abs(e.clientX - startX);
+        const h = Math.abs(e.clientY - startY);
+        if(w < 20 || h < 20) return;
 
-function handleEnd(e) {
-    if(!isDown) return; isDown = false;
-    const currentW = parseInt(dragBox.style.width);
-    const currentH = parseInt(dragBox.style.height);
-    const left = parseInt(dragBox.style.left);
-    const top = parseInt(dragBox.style.top);
-    dragBox.style.display = "none";
-    if(currentW < 20 || currentH < 20) return;
-    createResultBox(left, top, currentW, currentH, currentW > currentH ? (currentW/currentH) : (currentH/currentW));
-}
+        const box = document.createElement("div");
+        box.className = "traceBox";
+        
+        // 랜덤 컬러 적용
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-// 이벤트 리스너 등록 (마우스 + 터치)
-stage.addEventListener("mousedown", handleStart);
-window.addEventListener("mousemove", (e) => {
-    if(!isDown) updateCoords(e.clientX, e.clientY);
-    handleMove(e);
-});
-window.addEventListener("mouseup", handleEnd);
-
-stage.addEventListener("touchstart", handleStart, {passive: false});
-window.addEventListener("touchmove", handleMove, {passive: false});
-window.addEventListener("touchend", handleEnd);
-
-// CSV 파서 및 초기화 로직 (동일)
-function parseCSV(text) {
-    const result = []; let row = []; let field = ""; let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i]; const nextChar = text[i + 1];
-        if (inQuotes) { if (char === '"' && nextChar === '"') { field += '"'; i++; } else if (char === '"') { inQuotes = false; } else { field += char; } }
-        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(field); field = ""; } else if (char === '\n' || char === '\r') { if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; } if (char === '\r' && nextChar === '\n') i++; } else { field += char; } }
-    }
-    if (field || row.length > 0) { row.push(field); result.push(row); }
-    return result;
-}
-
-async function init() {
-    try {
-        const response = await fetch(CSV_URL);
-        const csvText = await response.text();
-        const rows = parseCSV(csvText);
-        const headers = rows[0].map(h => h.toLowerCase().trim());
-        const idx = { name: headers.indexOf('name'), image: headers.indexOf('image'), ratio: headers.indexOf('ratio'), point: headers.indexOf('point'), point_en: headers.indexOf('point_en'), level: headers.indexOf('level'), time: headers.indexOf('time'), link: headers.indexOf('link') };
-        db = rows.slice(1).map(row => {
-            let rVal = parseFloat(row[idx.ratio]);
-            return { name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], level: row[idx.level], time: row[idx.time], ratio: rVal, normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" };
-        }).filter(item => item.image && !isNaN(item.normRatio));
-        updateUI();
-    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
-}
-init();
-
-function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
-function updateUI() {
-    const t = translations[currentLang];
-    document.getElementById("ui-title").innerText = t.title;
-    document.getElementById("ui-tol").innerText = t.tol;
-    document.getElementById("closeDetail").innerText = t.close;
-    document.getElementById("status").innerHTML = `● ${t.status}`;
-}
-
-function createResultBox(x, y, w, h, userRatio) {
-    const box = document.createElement("div"); box.className = "traceBox"; Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' }); stage.appendChild(box);
-    const tVal = Number(document.getElementById("tol").value) / 100;
-    let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
-    if (results.length > 0) {
-        box.innerHTML = `<div class="box-header"><span>ratio 1:${userRatio.toFixed(1)}</span><span>${results.length} units</span></div>
-            <div class="image-list">${results.map(item => `
-                <div class="item-wrapper" onclick="event.stopPropagation(); openDetail('${btoa(encodeURIComponent(JSON.stringify(item)))}')">
-                    <img src="${ASSET_PATH + item.image}" class="result-img" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='">
-                    <span class="item-name">${item.name}</span>
-                </div>`).join('')}</div>`;
-    }
-}
-
-function openDetail(encoded) { currentActiveItem = JSON.parse(decodeURIComponent(atob(encoded))); refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; }
-function refreshDetailContent() {
-    const item = currentActiveItem;
-    const nameEl = document.getElementById("detailName");
-    nameEl.innerText = item.name;
-    nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
-    document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
-    const bgImg = document.getElementById("detailBgImg");
-    bgImg.src = ASSET_PATH + item.image;
-    bgImg.style.display = 'block';
-
-    const baseArea = window.innerWidth < 600 ? 80000 : 120000; 
-    let r = parseFloat(item.ratio) || 1;
-    let targetW = Math.sqrt(baseArea * r);
-    let targetH = baseArea / targetW;
-    const boxEl = document.getElementById("detailPointBox");
-    boxEl.style.width = Math.max(targetW, 250) + "px";
-    boxEl.style.height = Math.max(targetH, 150) + "px";
-
-    let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
-    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
-    document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
-}
-function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
-function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
-window.addEventListener("keydown", (e) => { if(e.code === "Space") document.querySelectorAll(".traceBox").forEach(el => el.remove()); });
+        Object.assign(box.style, {
+            left: Math.min(e.clientX, startX) + 'px',
+            top: Math.min(e.clientY, startY) + 'px',
+            width: w + 'px',
+            height: h + 'px',
+            background: randomColor
+        });
+        stage.appendChild(box);
+    });
 </script>
 </body>
 </html>
