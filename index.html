@@ -53,7 +53,8 @@
     }
     .scattered-img {
         position: absolute;
-        width: 80px; height: 80px; object-fit: contain; cursor: grab;
+        object-fit: contain; 
+        cursor: grab;
         z-index: 51;
     }
 
@@ -116,7 +117,6 @@ const colorPalette = ['rgba(255, 95, 87, 1)', 'rgba(255, 159, 67, 1)', 'rgba(255
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
 
-// 이미지 이동 로직
 document.addEventListener('mousedown', (e) => {
     if(e.target.classList.contains('scattered-img')) {
         draggedImg = e.target;
@@ -227,8 +227,13 @@ function createResultBox(x, y, w, h, userRatio) {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
             img.className = "scattered-img";
-            img.style.left = (x + Math.random() * (w - 80)) + 'px';
-            img.style.top = (y + Math.random() * (h - 80)) + 'px';
+            
+            // 이미지 크기를 드래그 영역의 30% 내외로 자동 설정 (최대 100px)
+            const size = Math.min(Math.min(w, h) * 0.3, 100);
+            img.style.width = size + 'px';
+            
+            img.style.left = (x + Math.random() * (w - size)) + 'px';
+            img.style.top = (y + Math.random() * (h - size)) + 'px';
             img.onclick = (e) => { e.stopPropagation(); currentActiveItem = item; refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; };
             stage.appendChild(img);
         });
