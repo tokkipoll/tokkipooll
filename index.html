@@ -14,7 +14,7 @@
         background: #ffffff; 
         background-image: linear-gradient(#fff4f4 1px, transparent 1px), linear-gradient(90deg, #fff4f4 1px, transparent 1px);
         background-size: 20px 20px;
-        font-family: 'Savate', 'Savate', sans-serif; 
+        font-family: 'Source Serif Variable', 'Savate', serif, sans-serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
@@ -64,8 +64,8 @@
     /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    #detailName { font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
-    #detailName:hover { color: #00ff00; }
+    #detailName {  font-family: 'Source Serif Variable', serif; font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
+    #detailName:hover { color: #0000ff; }
     #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
     #detailMeta { margin-top: 20px; font-size: 12px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
     #closeDetail { position: absolute; top: 25px; right: 25px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
