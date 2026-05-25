@@ -7,6 +7,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
+    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
@@ -16,6 +17,7 @@
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
+        -webkit-font-smoothing: antialiased;
         touch-action: none;
     }
 
@@ -43,16 +45,15 @@
     #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 - 불투명도 문제 해결 */
+    /* 결과 박스 - 불투명 설정 및 블렌드 적용 */
     .resultContainer { 
         position:absolute; 
-        border:1px solid rgba(0,0,0,0.2); 
         z-index: 50; 
-        /* mix-blend-mode 제거하여 선명하게 표시 */
+        mix-blend-mode: multiply;
     }
     .scattered-img {
         position: absolute;
-        width: 80px; height: 80px; object-fit: contain; cursor: pointer;
+        width: 80px; height: 80px; object-fit: contain; cursor: grab;
         z-index: 51;
     }
 
@@ -110,9 +111,26 @@ const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
-const colorPalette = ['rgba(255, 95, 87, 0.6)', 'rgba(255, 159, 67, 0.6)', 'rgba(255, 230, 80, 0.6)', 'rgba(120, 224, 143, 0.6)', 'rgba(84, 160, 255, 0.6)', 'rgba(197, 108, 240, 0.6)'];
+const colorPalette = ['rgba(255, 95, 87, 1)', 'rgba(255, 159, 67, 1)', 'rgba(255, 230, 80, 1)', 'rgba(120, 224, 143, 1)', 'rgba(84, 160, 255, 1)', 'rgba(197, 108, 240, 1)'];
 
 let db = []; let isDown = false; let startX, startY;
+let draggedImg = null, offX, offY;
+
+// 이미지 이동 로직
+document.addEventListener('mousedown', (e) => {
+    if(e.target.classList.contains('scattered-img')) {
+        draggedImg = e.target;
+        offX = e.clientX - draggedImg.offsetLeft;
+        offY = e.clientY - draggedImg.offsetTop;
+    }
+});
+document.addEventListener('mousemove', (e) => {
+    if(draggedImg) {
+        draggedImg.style.left = (e.clientX - offX) + 'px';
+        draggedImg.style.top = (e.clientY - offY) + 'px';
+    }
+});
+document.addEventListener('mouseup', () => draggedImg = null);
 
 function updateCoords(xVal, yVal) {
     const x = String(Math.round(xVal)).padStart(4, '0');
@@ -209,17 +227,9 @@ function createResultBox(x, y, w, h, userRatio) {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
             img.className = "scattered-img";
-            const rx = Math.random() * (w - 90);
-            const ry = Math.random() * (h - 90);
-            img.style.left = (x + rx) + 'px';
-            img.style.top = (y + ry) + 'px';
-            
-            img.onclick = (e) => { 
-                e.stopPropagation(); 
-                currentActiveItem = item; 
-                refreshDetailContent(); 
-                document.getElementById("detailView").style.display = "flex"; 
-            };
+            img.style.left = (x + Math.random() * (w - 80)) + 'px';
+            img.style.top = (y + Math.random() * (h - 80)) + 'px';
+            img.onclick = (e) => { e.stopPropagation(); currentActiveItem = item; refreshDetailContent(); document.getElementById("detailView").style.display = "flex"; };
             stage.appendChild(img);
         });
     }
@@ -227,22 +237,11 @@ function createResultBox(x, y, w, h, userRatio) {
 
 function refreshDetailContent() {
     const item = currentActiveItem;
-    const nameEl = document.getElementById("detailName");
-    nameEl.innerText = item.name;
-    nameEl.style.cursor = (item.link && item.link.startsWith('http')) ? "pointer" : "default";
+    document.getElementById("detailName").innerText = item.name;
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
-    const bgImg = document.getElementById("detailBgImg");
-    bgImg.src = ASSET_PATH + item.image;
-    bgImg.style.display = 'block';
-
-    const baseArea = window.innerWidth < 600 ? 80000 : 120000; 
-    let r = parseFloat(item.ratio) || 1;
-    let targetW = Math.sqrt(baseArea * r);
-    let targetH = baseArea / targetW;
-    const boxEl = document.getElementById("detailPointBox");
-    boxEl.style.width = Math.max(targetW, 250) + "px";
-    boxEl.style.height = Math.max(targetH, 150) + "px";
-
+    document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
+    document.getElementById("detailBgImg").style.display = 'block';
+    
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
