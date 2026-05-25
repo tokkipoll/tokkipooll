@@ -7,11 +7,12 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
+    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
-        background: #fffcf4; /* 빈티지 미색 */
-        background-image: linear-gradient(#fff0f0 1px, transparent 1px), linear-gradient(90deg, #fff0f0 1px, transparent 1px);
+        background: #ffffff; 
+        background-image: linear-gradient(#f2f2f2 1px, transparent 1px), linear-gradient(90deg, #f2f2f2 1px, transparent 1px);
         background-size: 20px 20px;
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
@@ -34,46 +35,49 @@
 
     #coords {
         position: fixed; top: 25px; right: 30px;
-        font-family: 'Space Mono', monospace; /* 모노스페이스 적용 */
+        font-family: 'Space Mono', monospace;
         font-size: 10px; color: #bbb;
         pointer-events: none; z-index: 100;
         letter-spacing: 0.1em;
     }
 
-    #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 0, 0, 0.05); display:none; pointer-events:none; z-index:1000; }
-    #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; font-family: 'Space Mono', monospace; }
+    /* 드래그 가이드 */
+    #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
+    #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 - 불투명 설정 및 블렌드 적용 */
+    /* 결과 박스 - 리소프린트 느낌 적용 */
     .resultContainer { 
         position:absolute; 
         z-index: 50; 
-        mix-blend-mode: multiply; /* 겹치면 진해지는 효과 */
+        mix-blend-mode: multiply; 
+        filter: contrast(1.1) brightness(1.05) saturate(1.2);
     }
     .scattered-img {
         position: absolute;
         object-fit: contain; 
         cursor: grab;
         z-index: 51;
+        filter: grayscale(0.2) contrast(1.1);
     }
 
     /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
     #detailName { font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
-    #detailName:hover { color: #ff4479; }
-    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(255, 255, 255, 0.5); z-index: 5; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
-    #detailMeta { margin-top: 20px; font-size: 12px; color: #888; letter-spacing: 2px; font-weight: 500; z-index: 10; font-family: 'Space Mono', monospace; }
+    #detailName:hover { color: #00ff00; }
+    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(0, 255, 0, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
+    #detailMeta { margin-top: 20px; font-size: 12px; color: #bbb; letter-spacing: 2px; font-weight: 500; z-index: 10; }
     #closeDetail { position: absolute; top: 25px; right: 25px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
     #detailLangToggle { position: absolute; bottom: 25px; right: 30px; font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; }
 
     /* 조작 패널 */
-    #panel { position:fixed; left:20px; bottom:20px; width:calc(100% - 40px); max-width:280px; background:#fffcf4; padding:15px; border:1px solid #000; z-index:3000; }
+    #panel { position:fixed; left:20px; bottom:20px; width:calc(100% - 40px); max-width:280px; background:#fff; padding:15px; border:1px solid #000; z-index:3000; }
     .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
     #ui-title { font-size: 14px; letter-spacing: -0.01em; font-weight: 600; text-transform: uppercase; } 
     .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
-    #status { font-size: 9px; color: #888; margin-bottom: 10px; display: block; font-family: 'Space Mono', monospace; }
+    #status { font-size: 9px; color: #bbb; margin-bottom: 10px; display: block; }
     #tol { width:100%; margin:8px 0; -webkit-appearance:none; background:#000; height:1.2px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#ff4479; border:1.5px solid #000; cursor:pointer; }
+    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#00ff00; border:1.5px solid #000; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -110,13 +114,11 @@ const translations = { KR: { title: "기록.V1", tol: "오차 범위", status: "
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
 const ASSET_PATH = "foldingpapers/assets/"; 
-// 빈티지한 원색 팔레트
 const colorPalette = ['rgba(235, 87, 87, 0.8)', 'rgba(242, 153, 74, 0.8)', 'rgba(242, 201, 76, 0.8)', 'rgba(39, 174, 96, 0.8)', 'rgba(45, 156, 219, 0.8)', 'rgba(155, 89, 182, 0.8)'];
 
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
 
-// 이미지 드래그 이동
 document.addEventListener('mousedown', (e) => {
     if(e.target.classList.contains('scattered-img')) {
         draggedImg = e.target;
@@ -133,7 +135,9 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', () => draggedImg = null);
 
 function updateCoords(xVal, yVal) {
-    document.getElementById('coords').innerText = `x: ${String(Math.round(xVal)).padStart(4, '0')}, y: ${String(Math.round(yVal)).padStart(4, '0')}`;
+    const x = String(Math.round(xVal)).padStart(4, '0');
+    const y = String(Math.round(yVal)).padStart(4, '0');
+    document.getElementById('coords').innerText = `x: ${x}, y: ${y}`;
 }
 
 function handleStart(e) {
@@ -152,31 +156,75 @@ function handleMove(e) {
     const w = Math.abs(pos.clientX - startX), h = Math.abs(pos.clientY - startY);
     dragBox.style.width = w + "px"; dragBox.style.height = h + "px";
     dragBox.style.left = Math.min(pos.clientX, startX) + "px"; dragBox.style.top = Math.min(pos.clientY, startY) + "px";
-    document.getElementById("ratioTag").innerHTML = `ratio 1:${(w>h?w/h:h/w).toFixed(2)}`;
+    const currentR = w > h ? (w/h) : (h/w);
+    document.getElementById("ratioTag").innerHTML = `ratio 1:${currentR.toFixed(2)}`;
 }
 
 function handleEnd(e) {
     if(!isDown) return; isDown = false;
-    const w = parseInt(dragBox.style.width), h = parseInt(dragBox.style.height);
-    const l = parseInt(dragBox.style.left), t = parseInt(dragBox.style.top);
+    const currentW = parseInt(dragBox.style.width);
+    const currentH = parseInt(dragBox.style.height);
+    const left = parseInt(dragBox.style.left);
+    const top = parseInt(dragBox.style.top);
     dragBox.style.display = "none";
-    if(w < 20 || h < 20) return;
-    createResultBox(l, t, w, h, w > h ? (w/h) : (h/w));
+    if(currentW < 20 || currentH < 20) return;
+    createResultBox(left, top, currentW, currentH, currentW > currentH ? (currentW/currentH) : (currentH/currentW));
 }
 
 stage.addEventListener("mousedown", handleStart);
 window.addEventListener("mousemove", (e) => { if(!isDown) updateCoords(e.clientX, e.clientY); handleMove(e); });
 window.addEventListener("mouseup", handleEnd);
+stage.addEventListener("touchstart", handleStart, {passive: false});
+window.addEventListener("touchmove", handleMove, {passive: false});
+window.addEventListener("touchend", handleEnd);
+
+function parseCSV(text) {
+    const result = []; let row = []; let field = ""; let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i]; const nextChar = text[i + 1];
+        if (inQuotes) { if (char === '"' && nextChar === '"') { field += '"'; i++; } else if (char === '"') { inQuotes = false; } else { field += char; } }
+        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(field); field = ""; } else if (char === '\n' || char === '\r') { if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; } if (char === '\r' && nextChar === '\n') i++; } else { field += char; } }
+    }
+    if (field || row.length > 0) { row.push(field); result.push(row); }
+    return result;
+}
+
+async function init() {
+    try {
+        const response = await fetch(CSV_URL);
+        const csvText = await response.text();
+        const rows = parseCSV(csvText);
+        const headers = rows[0].map(h => h.toLowerCase().trim());
+        const idx = { name: headers.indexOf('name'), image: headers.indexOf('image'), ratio: headers.indexOf('ratio'), point: headers.indexOf('point'), point_en: headers.indexOf('point_en'), level: headers.indexOf('level'), time: headers.indexOf('time'), link: headers.indexOf('link') };
+        db = rows.slice(1).map(row => {
+            let rVal = parseFloat(row[idx.ratio]);
+            return { name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], level: row[idx.level], time: row[idx.time], ratio: rVal, normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" };
+        }).filter(item => item.image && !isNaN(item.normRatio));
+        updateUI();
+    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
+}
+init();
+
+function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
+function updateUI() {
+    const t = translations[currentLang];
+    document.getElementById("ui-title").innerText = t.title;
+    document.getElementById("ui-tol").innerText = t.tol;
+    document.getElementById("closeDetail").innerText = t.close;
+    document.getElementById("status").innerHTML = `● ${t.status}`;
+}
 
 function createResultBox(x, y, w, h, userRatio) {
     const tVal = Number(document.getElementById("tol").value) / 100;
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
+    
     if (results.length > 0) {
         const box = document.createElement("div");
         box.className = "resultContainer";
         box.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
         Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
         stage.appendChild(box);
+        
         results.forEach(item => {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
@@ -197,6 +245,7 @@ function refreshDetailContent() {
     document.getElementById("detailPointBox").innerText = (currentLang === 'KR') ? item.point_kr : item.point_en;
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
     document.getElementById("detailBgImg").style.display = 'block';
+    
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
@@ -204,38 +253,6 @@ function refreshDetailContent() {
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
 window.addEventListener("keydown", (e) => { if(e.code === "Space") { document.querySelectorAll(".resultContainer").forEach(el => el.remove()); document.querySelectorAll(".scattered-img").forEach(el => el.remove()); } });
-// ... [나머지 CSV 초기화 로직 등 동일]
-async function init() {
-    try {
-        const response = await fetch(CSV_URL); const csvText = await response.text();
-        const rows = parseCSV(csvText); const headers = rows[0].map(h => h.toLowerCase().trim());
-        const idx = { name: headers.indexOf('name'), image: headers.indexOf('image'), ratio: headers.indexOf('ratio'), point: headers.indexOf('point'), point_en: headers.indexOf('point_en'), level: headers.indexOf('level'), time: headers.indexOf('time'), link: headers.indexOf('link') };
-        db = rows.slice(1).map(row => {
-            let rVal = parseFloat(row[idx.ratio]);
-            return { name: row[idx.name], image: row[idx.image], point_kr: row[idx.point], point_en: (idx.point_en !== -1 && row[idx.point_en]) ? row[idx.point_en] : row[idx.point], level: row[idx.level], time: row[idx.time], ratio: rVal, normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, link: (idx.link !== -1) ? row[idx.link] : "" };
-        }).filter(item => item.image && !isNaN(item.normRatio));
-        updateUI();
-    } catch (e) { document.getElementById("status").innerHTML = `OFFLINE`; }
-}
-function parseCSV(text) {
-    const result = []; let row = []; let field = ""; let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i]; const nextChar = text[i + 1];
-        if (inQuotes) { if (char === '"' && nextChar === '"') { field += '"'; i++; } else if (char === '"') { inQuotes = false; } else { field += char; } }
-        else { if (char === '"') { inQuotes = true; } else if (char === ',') { row.push(field); field = ""; } else if (char === '\n' || char === '\r') { if (field || row.length > 0) { row.push(field); result.push(row); field = ""; row = []; } if (char === '\r' && nextChar === '\n') i++; } else { field += char; } }
-    }
-    if (field || row.length > 0) { row.push(field); result.push(row); }
-    return result;
-}
-init();
-function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
-function updateUI() {
-    const t = translations[currentLang];
-    document.getElementById("ui-title").innerText = t.title;
-    document.getElementById("ui-tol").innerText = t.tol;
-    document.getElementById("closeDetail").innerText = t.close;
-    document.getElementById("status").innerHTML = `● ${t.status}`;
-}
 </script>
 </body>
 </html>
