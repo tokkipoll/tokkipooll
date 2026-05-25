@@ -7,7 +7,6 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
-    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
@@ -17,7 +16,6 @@
         font-family: 'Barlow Condensed', 'Pretendard', sans-serif; 
         overflow: hidden; 
         color: #000;
-        -webkit-font-smoothing: antialiased;
         touch-action: none;
     }
 
@@ -45,16 +43,17 @@
     #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
     #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 - 불투명도 효과 제거 */
+    /* 결과 박스 - 불투명도 문제 해결 */
     .resultContainer { 
         position:absolute; 
         border:1px solid rgba(0,0,0,0.2); 
         z-index: 50; 
-        /* mix-blend-mode: multiply; 제거됨 */
+        /* mix-blend-mode 제거하여 선명하게 표시 */
     }
     .scattered-img {
         position: absolute;
         width: 80px; height: 80px; object-fit: contain; cursor: pointer;
+        z-index: 51;
     }
 
     /* 상세 화면 */
@@ -200,14 +199,12 @@ function createResultBox(x, y, w, h, userRatio) {
     let results = db.filter(item => Math.abs(item.normRatio - userRatio) <= (userRatio * tVal));
     
     if (results.length > 0) {
-        // 배경 박스 생성
         const box = document.createElement("div");
         box.className = "resultContainer";
         box.style.backgroundColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
         Object.assign(box.style, { left: x+'px', top: y+'px', width: w+'px', height: h+'px' });
         stage.appendChild(box);
         
-        // 이미지들 랜덤 배치
         results.forEach(item => {
             const img = document.createElement("img");
             img.src = ASSET_PATH + item.image;
@@ -217,7 +214,6 @@ function createResultBox(x, y, w, h, userRatio) {
             img.style.left = (x + rx) + 'px';
             img.style.top = (y + ry) + 'px';
             
-            // 상세 정보 연결 복구
             img.onclick = (e) => { 
                 e.stopPropagation(); 
                 currentActiveItem = item; 
