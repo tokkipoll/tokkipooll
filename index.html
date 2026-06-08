@@ -43,13 +43,11 @@
         cursor: pointer; user-select: none;
         line-height: 1;
     }
-    /* 🔴 랜딩페이지 reset 버튼 호버 애니메이션 */
     #btn-reset { color: #0000ff; transition: opacity 0.2s ease; }
     #btn-reset:hover { opacity: 0.5; }
     
     #btn-lang { color: #000000; text-transform: lowercase; cursor: default; }
     
-    /* 🔴 랜딩페이지 kr/en 버튼 개별 호버 애니메이션 추가 (색상 전환 및 미세한 움직임) */
     .lang-item { 
         display: inline-block;
         cursor: pointer; 
@@ -146,7 +144,6 @@
         mix-blend-mode: multiply;
     }
     
-    /* 🔴 X 버튼의 기준점이 될 타이틀 콘텍스트 컨테이너 정렬 구조 정의 */
     #detailTitleContainer {
         position: relative;
         display: inline-block;
@@ -159,16 +156,17 @@
         font-size: 56px; font-weight: 600; 
         text-decoration: none; letter-spacing: -0.01em; cursor: pointer; 
         z-index: 10; color: #000000; text-transform: lowercase; 
-        padding-right: 20px; /* 글자와 X버튼 사이의 최소 간격 마련 */
+        padding-right: 30px; /* 버튼과의 여유 거리를 위해 패딩 우측값 증가 */
     }
     #detailName:hover { color: #0000ff; }
     
-    /* 비율 사각형 텍스트 박스 */
+    /* 🔴 비율 사각형 텍스트 박스 - 내부 글 설명글을 좌측정렬(text-align: left)로 변경 */
     #detailPointBox { 
         font-family: 'Pretendard', sans-serif;
         border: none;
         padding: 30px 25px; 
-        display: flex; align-items: center; justify-content: center; text-align: center; 
+        display: flex; align-items: center; justify-content: flex-start; /* 좌측 정렬 대응 내부 축 정렬 */
+        text-align: left; /* 좌측 정렬 변경 완료 */
         font-size: 15px; line-height: 1.5; 
         background: #0000ff; 
         transition: width 0.4s ease, height 0.4s ease, aspect-ratio 0.4s ease; 
@@ -192,10 +190,10 @@
         color: #000000; font-weight: 400; z-index: 10; 
     }
     
-    /* 🔴 교정 완료: 글자 길이에 상관없이 항상 타이틀 문자열 우측 상단 끝에 정확히 위치하도록 포지션 변경 */
+    /* 🔴 X 버튼 위치 변경 - 우측 오프셋값을 -15px로 더 벌려 글자와 겹치지 않게 거리 확보 */
     #closeDetail { 
         position: absolute; 
-        top: 6px; right: -2px; /* 글자 라인 우측 상단 끝 모서리에 고정 */
+        top: 6px; right: -15px; /* 타이틀 글자와 거리 한 단계 넓힘 */
         width: 14px; height: 14px;
         background: #0000ff;
         cursor: pointer; z-index: 100;
