@@ -44,9 +44,15 @@
         line-height: 1;
     }
     #btn-reset { color: #0000ff; }
-    #btn-lang { color: #000000; text-transform: lowercase; }
+    #btn-reset:hover { opacity: 0.7; }
+    
+    /* 🔴 1. kr/en 각각 독립적인 호버 작용을 위한 스타일 정의 */
+    #btn-lang { color: #000000; text-transform: lowercase; cursor: default; }
+    .lang-item { cursor: pointer; transition: color 0.2s ease; }
+    .lang-item:hover { color: #0000ff; }
+    .lang-item.active { font-weight: 900; }
 
-    /* 🔴 좌측 하단 타이틀 행간(line-height)을 1.1로 늘려 겹침 현상 해결 */
+    /* 좌측 하단 타이틀 */
     #brand-title {
         position: fixed; bottom: 45px; left: 35px;
         font-size: 42px; font-weight: 700; line-height: 1.1;
@@ -61,7 +67,7 @@
         display: none;
     }
 
-    /* 🔴 우측 세로형 슬라이더 드래그 동작 및 네모 움직임 전면 수정 */
+    /* 우측 세로형 슬라이더 패널 */
     #right-panel {
         position: fixed; right: 35px; top: 40px; bottom: 40px;
         width: 40px; display: flex; flex-direction: column; align-items: center;
@@ -80,22 +86,18 @@
         -webkit-appearance: none; appearance: none;
         width: 40px; height: 100%; background: transparent;
         outline: none; position: absolute; top: 0; cursor: pointer;
-        /* 브라우저가 제공하는 표준 세로 눈금선 모드 적용 */
         writing-mode: vertical-lr;
         direction: rtl; 
     }
-    /* 가운뎃선 역할을 할 가상 요소 생성 */
     #slider-container::before {
         content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
         width: 1px; background: #000; pointer-events: none;
     }
-    /* 크롬/사파리 세로 슬라이더 네모 손잡이 */
     #tol::-webkit-slider-thumb {
         -webkit-appearance: none; appearance: none;
         width: 14px; height: 14px; background: #000;
         cursor: pointer; border: none;
     }
-    /* 파이어폭스 세로 슬라이더 네모 손잡이 */
     #tol::-moz-range-thumb {
         width: 14px; height: 14px; background: #000;
         cursor: pointer; border: none;
@@ -126,10 +128,22 @@
     #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
     #detailName { font-size: 42px; font-weight: 600; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
     #detailName:hover { color: #0000ff; }
-    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 255, 0.02); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
+    
+    /* 🔴 3. 비율 적용을 위해 고정 폭 대신 유연한 크기와 aspect-ratio(종횡비) 기반으로 텍스트 박스 변경 */
+    #detailPointBox { 
+        border: 1px solid #000; padding: 25px; 
+        display: flex; align-items: center; justify-content: center; text-align: center; 
+        font-size: 15px; line-height: 1.6; background: rgba(0, 0, 255, 0.02); 
+        transition: width 0.4s ease, height 0.4s ease, aspect-ratio 0.4s ease; 
+        overflow-y: auto; z-index: 5; font-weight: 300; 
+        width: 320px; /* 기본 너비 세팅 (비율에 맞춰 높이가 자동 조절됨) */
+        max-width: 90vw; max-height: 45vh; 
+        letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); 
+    }
+    
     #detailMeta { margin-top: 20px; font-size: 12px; color: #535353; letter-spacing: 2px; font-weight: 500; z-index: 10; }
     #closeDetail { position: absolute; top: 35px; right: 35px; font-size: 14px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; text-transform: uppercase; }
-    #detailLangToggle { position: absolute; bottom: 35px; right: 35px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; }
+    #detailLangToggle { position: absolute; bottom: 35px; right: 35px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; display: none; }
 
     #pdfBtn {
         margin-top: 25px;
@@ -156,7 +170,9 @@
 <div id="guide-left">Drag to define<br>your ratio</div>
 <div id="ctrl-group">
     <div id="btn-reset" class="ctrl-btn" onclick="clearStage()">reset</div>
-    <div id="btn-lang" class="ctrl-btn" onclick="toggleLang()">kr/en</div>
+    <div id="btn-lang" class="ctrl-btn">
+        <span class="lang-item" onclick="setLang('KR')">kr</span>/<span class="lang-item" onclick="setLang('EN')">en</span>
+    </div>
 </div>
 
 <div id="brand-title">origami<br>archive</div>
@@ -170,8 +186,8 @@
     <img id="detailBgImg" src="" onerror="this.style.display='none'">
     <div id="detailPointBox" onclick="event.stopPropagation()"></div>
     <div id="detailMeta"><span id="detailTime"></span> • <span id="detailLevel"></span></div>
-    <button id="pdfBtn" onclick="openPDF(event)">OPEN PDF</button>
-    <div id="detailLangToggle" onclick="toggleLang()">ENG / KR</div>
+    <button id="pdfBtn" onclick="openPDF(event)">DOWNLOAD</button>
+    <div id="detailLangToggle">ENG / KR</div>
 </div>
 
 <div id="right-panel">
@@ -186,9 +202,10 @@
 <script>
 let currentLang = 'KR';
 let currentActiveItem = null;
+// 🔴 2. 네모버튼 문구를 OPEN PDF에서 DOWNLOAD / 다운로드 로 변경 적용
 const translations = { 
-    KR: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "닫기", pdf: "PDF 도면 열기" }, 
-    EN: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "OPEN PDF" } 
+    KR: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "닫기", pdf: "다운로드" }, 
+    EN: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "DOWNLOAD" } 
 };
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
@@ -310,7 +327,13 @@ async function init() {
 }
 init();
 
-function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
+// 🔴 언어 전환 시 처리 전용 핸들러 변경
+function setLang(lang) {
+    currentLang = lang;
+    updateUI();
+    if (currentActiveItem) refreshDetailContent();
+}
+
 function updateUI() {
     const t = translations[currentLang];
     document.getElementById("brand-title").innerHTML = t.title.replace("\n", "<br>");
@@ -351,6 +374,15 @@ function refreshDetailContent() {
     document.getElementById("detailBgImg").src = ASSET_PATH + item.image;
     document.getElementById("detailBgImg").style.display = 'block';
     
+    // 🔴 3. 해당 종이접기의 실제 가로세로 비율(item.ratio)을 계산하여 텍스트 박스 형태에 실시간 대입
+    const pointBox = document.getElementById("detailPointBox");
+    if(item.ratio && !isNaN(item.ratio)) {
+        // item.ratio가 1보다 작으면 세로가 긴 비율이므로, 가로 세로 종횡비를 깔끔하게 적용
+        pointBox.style.aspectRatio = `${item.ratio}`;
+    } else {
+        pointBox.style.aspectRatio = "1 / 1"; // 예외 필터용 기본 정사각형
+    }
+
     let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
