@@ -156,17 +156,21 @@
         font-size: 56px; font-weight: 600; 
         text-decoration: none; letter-spacing: -0.01em; cursor: pointer; 
         z-index: 10; color: #000000; text-transform: lowercase; 
-        padding-right: 30px; /* 버튼과의 여유 거리를 위해 패딩 우측값 증가 */
+        padding-right: 30px; 
     }
     #detailName:hover { color: #0000ff; }
     
-    /* 🔴 비율 사각형 텍스트 박스 - 내부 글 설명글을 좌측정렬(text-align: left)로 변경 */
+    /* 🔴 원복 및 보완: 중앙 정렬 복구 + 단어 단위 예쁜 줄바꿈(Typography Anti-Breaking) 처리 */
     #detailPointBox { 
         font-family: 'Pretendard', sans-serif;
         border: none;
         padding: 30px 25px; 
-        display: flex; align-items: center; justify-content: flex-start; /* 좌측 정렬 대응 내부 축 정렬 */
-        text-align: left; /* 좌측 정렬 변경 완료 */
+        display: flex; align-items: center; justify-content: center; 
+        
+        text-align: center; /* 1. 다시 가운데 정렬로 원복 */
+        word-break: keep-all; /* 2. 글자 중간이 끊기지 않고 단어 단위로 예쁘게 떨어짐 */
+        overflow-wrap: break-word; /* 3. 박스 너비 한계를 넘을 시 유기적으로 단어를 감싸 내려줌 */
+        
         font-size: 15px; line-height: 1.5; 
         background: #0000ff; 
         transition: width 0.4s ease, height 0.4s ease, aspect-ratio 0.4s ease; 
@@ -175,7 +179,7 @@
         color: #ffffff; 
         width: 320px; 
         max-width: 90vw; max-height: 45vh; 
-        letter-spacing: -0.01em; word-break: keep-all; 
+        letter-spacing: -0.01em;
     }
     
     #detailBoxWrapper {
@@ -190,10 +194,10 @@
         color: #000000; font-weight: 400; z-index: 10; 
     }
     
-    /* 🔴 X 버튼 위치 변경 - 우측 오프셋값을 -15px로 더 벌려 글자와 겹치지 않게 거리 확보 */
+    /* X 버튼 위치 고정 및 간격 유지 */
     #closeDetail { 
         position: absolute; 
-        top: 6px; right: -15px; /* 타이틀 글자와 거리 한 단계 넓힘 */
+        top: 6px; right: -15px; 
         width: 14px; height: 14px;
         background: #0000ff;
         cursor: pointer; z-index: 100;
