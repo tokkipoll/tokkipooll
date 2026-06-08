@@ -4,18 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ORIGAMI ARCHIVE</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
-    /* --- 기초 디자인 --- */
+    /* --- 기초 디자인 및 레이아웃 수정 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
         background: #ffffff; 
-        background-image: linear-gradient(#ececec 1px, transparent 1px), linear-gradient(90deg, #ececec 1px, transparent 1px);
-        background-size: 20px 20px;
-        font-family: 'Savate', 'Savate', sans-serif; 
+        font-family: 'Source Serif 4', 'Pretendard', serif; 
         overflow: hidden; 
         color: #000;
         -webkit-font-smoothing: antialiased;
@@ -24,29 +22,84 @@
 
     #stage { position:relative; width:100vw; height:100vh; cursor:crosshair; background: transparent; z-index: 10; }
 
+    /* 좌측 상단 메인 안내 문구 */
     #guide-left {
-        position: fixed; top: 25px; left: 30px;
-        font-family: 'Savate', serif;
-        font-size: 15px; font-weight: 600; color: hsl(231, 71%, 52%);
-        letter-spacing: 0.15em; text-transform: uppercase;
+        position: fixed; top: 35px; left: 35px;
+        font-size: 42px; font-weight: 400; color: #000;
+        line-height: 1.1; letter-spacing: -0.01em;
         pointer-events: none; z-index: 100;
-        animation: blink 2s infinite;
     }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+    /* 좌측 상단 컨트롤 메뉴 그룹 (reset / kr/en) */
+    #ctrl-group {
+        position: fixed; top: 150px; left: 35px;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .ctrl-btn {
+        font-size: 36px; font-weight: 700;
+        cursor: pointer; user-select: none;
+        line-height: 1;
+    }
+    #btn-reset { color: #0000ff; }
+    #btn-lang { color: #000000; text-transform: lowercase; }
+
+    /* 좌측 하단 타이틀 */
+    #brand-title {
+        position: fixed; bottom: 45px; left: 35px;
+        font-size: 42px; font-weight: 700; line-height: 0.95;
+        letter-spacing: -0.02em; pointer-events: none; z-index: 100;
+    }
+
+    /* 실시간 좌표 표시 (기능 유지, 눈에 띄지 않게 처리) */
     #coords {
-        position: fixed; top: 25px; right: 30px;
-        font-family: 'Savate', monospace;
-        font-size: 14px; color: #000000;
+        position: fixed; top: 15px; left: 35px;
+        font-family: 'Space Mono', monospace;
+        font-size: 11px; color: #aaa;
         pointer-events: none; z-index: 100;
-        letter-spacing: 0.1em;
+        display: none; /* 디자인을 위해 기본 숨김 처리 (필요시 block으로 변경 가능) */
+    }
+
+    /* 우측 세로형 오차범위(Tolerance) 패널 */
+    #right-panel {
+        position: fixed; right: 35px; top: 40px; bottom: 40px;
+        width: 40px; display: flex; flex-direction: column; align-items: center;
+        z-index: 3000;
+    }
+    #ui-tol-wrapper {
+        font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 600;
+        color: #0000ff; text-transform: uppercase; white-space: nowrap;
+        transform: rotate(90deg) translate(0, 0); transform-origin: center center;
+        margin-bottom: 50px; margin-top: 20px;
+    }
+    #slider-container {
+        position: relative; flex: 1; width: 100%; display: flex; justify-content: center;
+    }
+    /* 커스텀 세로 슬라이더 스타일 */
+    #tol {
+        -webkit-appearance: none; appearance: none;
+        width: 1px; height: 100%; background: #000;
+        outline: none; position: absolute; top: 0;
+    }
+    /* 크롬/사파리 슬라이더 손잡이 사각형으로 변경 */
+    #tol::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 14px; height: 14px; background: #000;
+        cursor: pointer; border: none;
+    }
+    /* 파이어폭스 슬라이더 손잡이 */
+    #tol::-moz-range-thumb {
+        width: 14px; height: 14px; background: #000;
+        cursor: pointer; border: none;
     }
 
     /* 드래그 가이드 */
-    #dragBox { position:absolute; border:1px solid #d5d5d5; background: rgba(0, 255, 0, 0.03); display:none; pointer-events:none; z-index:1000; }
-    #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
+    #dragBox { position:absolute; border:1px solid #000; background: rgba(0, 0, 0, 0.02); display:none; pointer-events:none; z-index:1000; }
+    #ratioTag { position:absolute; top:-25px; left:0; background:#000000; color:#fff; font-family:'Space Mono', monospace; font-size:10px; font-weight:600; padding:2px 6px; white-space: nowrap; }
 
-    /* 결과 박스 */
+    /* 결과 박스 및 이미지 리스트 */
     .resultContainer { 
         position:absolute; 
         z-index: 50; 
@@ -65,14 +118,13 @@
     /* 상세 화면 */
     #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
     #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    #detailName { font-size: 32px; font-weight: 500; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
+    #detailName { font-size: 42px; font-weight: 600; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
     #detailName:hover { color: #0000ff; }
-    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.6; background: rgba(17, 0, 255, 0.05); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
+    #detailPointBox { border: 1px solid #000; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 255, 0.02); transition: width 0.4s ease, height 0.4s ease; overflow-y: auto; z-index: 5; font-weight: 300; max-width: 90vw; max-height: 40vh; letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); }
     #detailMeta { margin-top: 20px; font-size: 12px; color: #535353; letter-spacing: 2px; font-weight: 500; z-index: 10; }
-    #closeDetail { position: absolute; top: 25px; right: 25px; font-size: 12px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; }
-    #detailLangToggle { position: absolute; bottom: 25px; right: 30px; font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; }
+    #closeDetail { position: absolute; top: 35px; right: 35px; font-size: 14px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; text-transform: uppercase; }
+    #detailLangToggle { position: absolute; bottom: 35px; right: 35px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; }
 
-    /* 🔴 새로 추가된 PDF 버튼 스타일 */
     #pdfBtn {
         margin-top: 25px;
         padding: 10px 20px;
@@ -86,26 +138,24 @@
         cursor: pointer;
         z-index: 10;
         transition: background 0.2s, color 0.2s;
-        display: none; /* 기본적으로 숨김 */
+        display: none;
     }
-    #pdfBtn:hover {
-        background: #0000ff;
-        border-color: #0000ff;
-    }
+    #pdfBtn:hover { background: #0000ff; border-color: #0000ff; }
 
-    /* 조작 패널 */
-    #panel { position:fixed; left:20px; bottom:20px; width:calc(100% - 40px); max-width:280px;; padding:15px; z-index:3000; }
-    .panel-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    #ui-title { font-size: 20px; letter-spacing: -0.01em; font-weight: 800; text-transform: uppercase; } 
-    .lang-switcher { font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 1.5px solid #000; }
-    #status { font-size: 9px; color: #bbb; margin-bottom: 12px; display: block; }
-    #tol { width:100%; margin:8px 0; -webkit-appearance:none; background:#3770ff; height:1.2px; }
-    #tol::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:#ff1818; border:1px solid #ff1818; cursor:pointer; }
+    /* 구글 시트 동기화 상태 텍스트 (숨김 혹은 좌측 하단 작게 배치 가능) */
+    #status { position: fixed; bottom: 15px; left: 35px; font-size: 9px; color: #ccc; z-index: 100; pointer-events: none; }
 </style>
 </head>
 <body onclick="if(event.target.id==='detailView') closeDetail()">
 
-<div id="guide-left">drag to define ratio</div>
+<div id="guide-left">Drag to define<br>your ratio</div>
+<div id="ctrl-group">
+    <div id="btn-reset" class="ctrl-btn" onclick="clearStage()">reset</div>
+    <div id="btn-lang" class="ctrl-btn" onclick="toggleLang()">kr/en</div>
+</div>
+
+<div id="brand-title">origami<br>archive</div>
+
 <div id="coords">x: 0000, y: 0000</div>
 <div id="stage"><div id="dragBox"><div id="ratioTag">1:1.00</div></div></div>
 
@@ -115,30 +165,25 @@
     <img id="detailBgImg" src="" onerror="this.style.display='none'">
     <div id="detailPointBox" onclick="event.stopPropagation()"></div>
     <div id="detailMeta"><span id="detailTime"></span> • <span id="detailLevel"></span></div>
-    
     <button id="pdfBtn" onclick="openPDF(event)">OPEN PDF</button>
-    
     <div id="detailLangToggle" onclick="toggleLang()">ENG / KR</div>
 </div>
 
-<div id="panel">
-    <div class="panel-header">
-        <h1 id="ui-title">ORIGAMI ARCHIVE.V1</h1> 
-        <div class="lang-switcher" onclick="toggleLang()">EN / KR</div>
-    </div>
-    <div id="status">SYNCED WITH GOOGLE SHEETS</div>
-    <div style="margin-top:8px;">
-        <label style="font-size: 11px; font-weight: 600;"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">30%</span></label>
-        <input type="range" min="1" max="100" value="30" id="tol">
+<div id="right-panel">
+    <div id="ui-tol-wrapper"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">50%</span></div>
+    <div id="slider-container">
+        <input type="range" min="1" max="100" value="50" id="tol" style="transform: rotate(0deg); width: 1px; height: 100%;">
     </div>
 </div>
+
+<div id="status">SYNCED WITH GOOGLE SHEETS</div>
 
 <script>
 let currentLang = 'KR';
 let currentActiveItem = null;
 const translations = { 
-    KR: { title: "접기의 아카이브", tol: "오차 범위", status: "구글 시트 데이터와 동기화됨", close: "닫기", pdf: "PDF 도면 열기" }, 
-    EN: { title: "ORIGAMI ARCHIVE", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "OPEN PDF" } 
+    KR: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "닫기", pdf: "PDF 도면 열기" }, 
+    EN: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "OPEN PDF" } 
 };
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
@@ -146,6 +191,11 @@ const ASSET_PATH = "foldingpapers/assets/";
 
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
+
+// 슬라이더 변경 시 텍스트 업데이트 이벤트 바인딩
+document.getElementById("tol").addEventListener("input", function() {
+    document.getElementById("tolText").innerText = this.value + "%";
+});
 
 document.addEventListener('mousedown', (e) => {
     if(e.target.classList.contains('scattered-img')) {
@@ -224,7 +274,6 @@ async function init() {
         const rows = parseCSV(csvText);
         const headers = rows[0].map(h => h.toLowerCase().trim());
         
-        // 🔴 헤더에서 'pdf' 열 인덱스 추가 구하기
         const idx = { 
             name: headers.indexOf('name'), 
             image: headers.indexOf('image'), 
@@ -234,7 +283,7 @@ async function init() {
             level: headers.indexOf('level'), 
             time: headers.indexOf('time'), 
             link: headers.indexOf('link'),
-            pdf: headers.indexOf('pdf') // 추가됨
+            pdf: headers.indexOf('pdf')
         };
         
         db = rows.slice(1).map(row => {
@@ -249,7 +298,7 @@ async function init() {
                 ratio: rVal, 
                 normRatio: (rVal > 0 && rVal < 1) ? 1/rVal : rVal, 
                 link: (idx.link !== -1) ? row[idx.link] : "",
-                pdf: (idx.pdf !== -1 && row[idx.pdf]) ? row[idx.pdf].trim() : "" // 🔴 pdf 데이터 바인딩
+                pdf: (idx.pdf !== -1 && row[idx.pdf]) ? row[idx.pdf].trim() : ""
             };
         }).filter(item => item.image && !isNaN(item.normRatio));
         updateUI();
@@ -260,7 +309,7 @@ init();
 function toggleLang() { currentLang = (currentLang === 'KR') ? 'EN' : 'KR'; updateUI(); if (currentActiveItem) refreshDetailContent(); }
 function updateUI() {
     const t = translations[currentLang];
-    document.getElementById("ui-title").innerText = t.title;
+    document.getElementById("brand-title").innerHTML = t.title.replace("\n", "<br>");
     document.getElementById("ui-tol").innerText = t.tol;
     document.getElementById("closeDetail").innerText = t.close;
     document.getElementById("status").innerHTML = `● ${t.status}`;
@@ -302,7 +351,6 @@ function refreshDetailContent() {
     if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
     document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
 
-    // 🔴 PDF 버튼 처리 및 다국어 텍스트 적용
     const pdfBtn = document.getElementById("pdfBtn");
     if (item.pdf && (item.pdf.startsWith('http') || item.pdf.endsWith('.pdf'))) {
         pdfBtn.innerText = translations[currentLang].pdf;
@@ -312,17 +360,22 @@ function refreshDetailContent() {
     }
 }
 
-// 🔴 PDF 파일을 새 창으로 열어주는 함수 추가
 function openPDF(e) {
-    e.stopPropagation(); // 부모 detailView 클릭 이벤트 전파 차단 (창 닫힘 방지)
+    e.stopPropagation();
     if (currentActiveItem && currentActiveItem.pdf) {
         window.open(currentActiveItem.pdf, '_blank');
     }
 }
 
+// 스페이스바 혹은 reset 클릭 시 작동하는 화면 초기화 기능
+function clearStage() {
+    document.querySelectorAll(".resultContainer").forEach(el => el.remove()); 
+    document.querySelectorAll(".scattered-img").forEach(el => el.remove());
+}
+
 function goToLink() { if (currentActiveItem && currentActiveItem.link.startsWith('http')) window.open(currentActiveItem.link, '_blank'); }
 function closeDetail() { document.getElementById("detailView").style.display = "none"; currentActiveItem = null; }
-window.addEventListener("keydown", (e) => { if(e.code === "Space") { document.querySelectorAll(".resultContainer").forEach(el => el.remove()); document.querySelectorAll(".scattered-img").forEach(el => el.remove()); } });
+window.addEventListener("keydown", (e) => { if(e.code === "Space") clearStage(); });
 </script>
 </body>
 </html>
