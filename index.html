@@ -43,12 +43,22 @@
         cursor: pointer; user-select: none;
         line-height: 1;
     }
-    #btn-reset { color: #0000ff; }
-    #btn-reset:hover { opacity: 0.7; }
+    /* 🔴 랜딩페이지 reset 버튼 호버 애니메이션 */
+    #btn-reset { color: #0000ff; transition: opacity 0.2s ease; }
+    #btn-reset:hover { opacity: 0.5; }
     
     #btn-lang { color: #000000; text-transform: lowercase; cursor: default; }
-    .lang-item { cursor: pointer; transition: color 0.2s ease; }
-    .lang-item:hover { color: #0000ff; }
+    
+    /* 🔴 랜딩페이지 kr/en 버튼 개별 호버 애니메이션 추가 (색상 전환 및 미세한 움직임) */
+    .lang-item { 
+        display: inline-block;
+        cursor: pointer; 
+        transition: color 0.25s ease, transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); 
+    }
+    .lang-item:hover { 
+        color: #0000ff; 
+        transform: translateY(-2px);
+    }
     .lang-item.active { font-weight: 900; }
 
     /* 좌측 하단 타이틀 */
@@ -122,14 +132,13 @@
         filter: grayscale(0.2) contrast(1.1);
     }
 
-    /* 🔴 상세 화면 - 두 번째 스크린샷 기반 화이트 무드로 변경 */
+    /* 상세 화면 */
     #detailView { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-        background: #ffffff; /* 흰색 배경 */
+        background: #ffffff; 
         display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
     }
     
-    /* 종이 잔상이 파란 사각형 내부 글씨 레이어와 간섭하지 않도록 투명도 및 레이어 순서 미세 조정 */
     #detailBgImg { 
         position: absolute; max-width: 45vw; max-height: 40vh; opacity: 0.12; z-index: 3; 
         filter: grayscale(1) contrast(1.2); object-fit: contain; pointer-events: none; 
@@ -137,28 +146,35 @@
         mix-blend-mode: multiply;
     }
     
+    /* 🔴 X 버튼의 기준점이 될 타이틀 콘텍스트 컨테이너 정렬 구조 정의 */
+    #detailTitleContainer {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 30px;
+    }
+
     /* 타이틀 검은색 세리프 적용 */
     #detailName { 
         font-family: 'Source Serif 4', serif;
-        font-size: 56px; font-weight: 600; margin-bottom: 30px; 
+        font-size: 56px; font-weight: 600; 
         text-decoration: none; letter-spacing: -0.01em; cursor: pointer; 
         z-index: 10; color: #000000; text-transform: lowercase; 
-        position: relative;
+        padding-right: 20px; /* 글자와 X버튼 사이의 최소 간격 마련 */
     }
     #detailName:hover { color: #0000ff; }
     
-    /* 🔴 비율 사각형 텍스트 박스 - 테두리 없이 꽉 찬 파란색으로 변경 */
+    /* 비율 사각형 텍스트 박스 */
     #detailPointBox { 
         font-family: 'Pretendard', sans-serif;
         border: none;
         padding: 30px 25px; 
         display: flex; align-items: center; justify-content: center; text-align: center; 
         font-size: 15px; line-height: 1.5; 
-        background: #0000ff; /* 꽉 찬 파란색 배경 */
+        background: #0000ff; 
         transition: width 0.4s ease, height 0.4s ease, aspect-ratio 0.4s ease; 
         overflow-y: auto; z-index: 5; 
         font-weight: 400; 
-        color: #ffffff; /* 내부 글씨는 흰색 */
+        color: #ffffff; 
         width: 320px; 
         max-width: 90vw; max-height: 45vh; 
         letter-spacing: -0.01em; word-break: keep-all; 
@@ -169,53 +185,50 @@
         position: relative;
     }
     
-    /* 🔴 타임/레벨 메타 정보 검은색으로 변경 */
+    /* 타임/레벨 메타 정보 */
     #detailMeta { 
         display: flex; justify-content: space-between;
         margin-top: 12px; font-family: 'Pretendard', sans-serif; font-size: 13px; 
         color: #000000; font-weight: 400; z-index: 10; 
     }
     
-    /* 🔴 우측 상단 파란색 사각형 닫기 버튼 디자인 */
+    /* 🔴 교정 완료: 글자 길이에 상관없이 항상 타이틀 문자열 우측 상단 끝에 정확히 위치하도록 포지션 변경 */
     #closeDetail { 
-        position: absolute; top: 12%; right: 35%; /* 스크린샷 타이틀 기준 오른쪽 위 포지션 매칭 */
+        position: absolute; 
+        top: 6px; right: -2px; /* 글자 라인 우측 상단 끝 모서리에 고정 */
         width: 14px; height: 14px;
         background: #0000ff;
         cursor: pointer; z-index: 100;
-        transition: transform 0.3s ease, opacity 0.2s ease;
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
         display: flex; align-items: center; justify-content: center;
     }
-    /* 미니멀한 X 가상 클래스 마크업 구현 */
     #closeDetail::before, #closeDetail::after {
         content: ''; position: absolute; width: 8px; height: 1px; background: #fff;
     }
     #closeDetail::before { transform: rotate(45deg); }
     #closeDetail::after { transform: rotate(-45deg); }
     
-    /* 닫기 버튼 호버 애니메이션 */
     #closeDetail:hover {
-        transform: rotate(90deg);
-        opacity: 0.8;
+        transform: rotate(90deg) scale(1.1);
+        opacity: 0.9;
     }
 
-    /* 🔴 다운로드 버튼 스타일 및 호버 애니메이션 추가 */
+    /* 다운로드 버튼 스타일 및 호버 애니메이션 */
     #pdfBtn {
         margin-top: 40px;
         padding: 8px 24px;
-        border: 1px solid #0000ff; /* 파란색 테두리 */
-        background: #ffffff; /* 흰색 배경 */
-        color: #0000ff; /* 파란색 글씨 */
+        border: 1px solid #0000ff; 
+        background: #ffffff; 
+        color: #0000ff; 
         font-family: 'Pretendard', sans-serif;
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
         z-index: 10;
         text-transform: lowercase;
-        /* 부드러운 호버 애니메이션 작동을 위한 트랜지션 설정 */
         transition: background 0.3s cubic-bezier(0.25, 1, 0.5, 1), color 0.3s ease;
         display: none;
     }
-    /* 다운로드 버튼 호버 시 색상이 반전되며 채워지는 인터랙션 효과 */
     #pdfBtn:hover { 
         background: #0000ff; 
         color: #ffffff; 
@@ -230,7 +243,7 @@
 
 <div id="ctrl-group">
     <div id="btn-lang" class="ctrl-btn">
-        <span class="lang-item" onclick="setLang('KR')">kr</span>/<span class="lang-item" onclick="setLang('EN')">en</span>
+        <span class="lang-item" onclick="setLang('KR')">kr</span>/<span> </span><span class="lang-item" onclick="setLang('EN')">en</span>
     </div>
     <div id="btn-reset" class="ctrl-btn" onclick="clearStage()">reset</div>
 </div>
@@ -242,7 +255,7 @@
 
 <div id="detailView" onclick="closeDetail()">
     
-    <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+    <div id="detailTitleContainer">
         <div id="detailName" onclick="goToLink()"></div>
         <div id="closeDetail" onclick="closeDetail()"></div>
     </div>
