@@ -122,43 +122,104 @@
         filter: grayscale(0.2) contrast(1.1);
     }
 
-    /* 상세 화면 */
-    #detailView { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; }
-    #detailBgImg { position: absolute; max-width: 50vw; max-height: 50vh; opacity: 0.08; z-index: 1; filter: grayscale(1); object-fit: contain; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-    #detailName { font-size: 42px; font-weight: 600; margin-bottom: 20px; text-decoration: none; letter-spacing: -0.02em; cursor: pointer; transition: color 0.2s; z-index: 10; color: #000; text-transform: lowercase; }
+    /* 🔴 상세 화면 - 두 번째 스크린샷 기반 화이트 무드로 변경 */
+    #detailView { 
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+        background: #ffffff; /* 흰색 배경 */
+        display: none; z-index: 6000; flex-direction: column; align-items: center; justify-content: center; 
+    }
+    
+    /* 종이 잔상이 파란 사각형 내부 글씨 레이어와 간섭하지 않도록 투명도 및 레이어 순서 미세 조정 */
+    #detailBgImg { 
+        position: absolute; max-width: 45vw; max-height: 40vh; opacity: 0.12; z-index: 3; 
+        filter: grayscale(1) contrast(1.2); object-fit: contain; pointer-events: none; 
+        top: 50%; left: 50%; transform: translate(-50%, -50%); 
+        mix-blend-mode: multiply;
+    }
+    
+    /* 타이틀 검은색 세리프 적용 */
+    #detailName { 
+        font-family: 'Source Serif 4', serif;
+        font-size: 56px; font-weight: 600; margin-bottom: 30px; 
+        text-decoration: none; letter-spacing: -0.01em; cursor: pointer; 
+        z-index: 10; color: #000000; text-transform: lowercase; 
+        position: relative;
+    }
     #detailName:hover { color: #0000ff; }
     
+    /* 🔴 비율 사각형 텍스트 박스 - 테두리 없이 꽉 찬 파란색으로 변경 */
     #detailPointBox { 
-        border: 1px solid #000; padding: 25px; 
+        font-family: 'Pretendard', sans-serif;
+        border: none;
+        padding: 30px 25px; 
         display: flex; align-items: center; justify-content: center; text-align: center; 
-        font-size: 15px; line-height: 1.6; background: rgba(0, 0, 255, 0.02); 
+        font-size: 15px; line-height: 1.5; 
+        background: #0000ff; /* 꽉 찬 파란색 배경 */
         transition: width 0.4s ease, height 0.4s ease, aspect-ratio 0.4s ease; 
-        overflow-y: auto; z-index: 5; font-weight: 300; 
+        overflow-y: auto; z-index: 5; 
+        font-weight: 400; 
+        color: #ffffff; /* 내부 글씨는 흰색 */
         width: 320px; 
         max-width: 90vw; max-height: 45vh; 
-        letter-spacing: 0.05em; word-break: keep-all; backdrop-filter: blur(2px); 
+        letter-spacing: -0.01em; word-break: keep-all; 
     }
     
-    #detailMeta { margin-top: 20px; font-size: 12px; color: #535353; letter-spacing: 2px; font-weight: 500; z-index: 10; }
-    #closeDetail { position: absolute; top: 35px; right: 35px; font-size: 14px; cursor: pointer; border-bottom: 1.2px solid #000; font-weight: 600; z-index: 100; text-transform: uppercase; }
-    #detailLangToggle { position: absolute; bottom: 35px; right: 35px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 1.2px solid #000; z-index: 100; display: none; }
+    #detailBoxWrapper {
+        display: flex; flex-direction: column; width: 320px; max-width: 90vw; z-index: 5;
+        position: relative;
+    }
+    
+    /* 🔴 타임/레벨 메타 정보 검은색으로 변경 */
+    #detailMeta { 
+        display: flex; justify-content: space-between;
+        margin-top: 12px; font-family: 'Pretendard', sans-serif; font-size: 13px; 
+        color: #000000; font-weight: 400; z-index: 10; 
+    }
+    
+    /* 🔴 우측 상단 파란색 사각형 닫기 버튼 디자인 */
+    #closeDetail { 
+        position: absolute; top: 12%; right: 35%; /* 스크린샷 타이틀 기준 오른쪽 위 포지션 매칭 */
+        width: 14px; height: 14px;
+        background: #0000ff;
+        cursor: pointer; z-index: 100;
+        transition: transform 0.3s ease, opacity 0.2s ease;
+        display: flex; align-items: center; justify-content: center;
+    }
+    /* 미니멀한 X 가상 클래스 마크업 구현 */
+    #closeDetail::before, #closeDetail::after {
+        content: ''; position: absolute; width: 8px; height: 1px; background: #fff;
+    }
+    #closeDetail::before { transform: rotate(45deg); }
+    #closeDetail::after { transform: rotate(-45deg); }
+    
+    /* 닫기 버튼 호버 애니메이션 */
+    #closeDetail:hover {
+        transform: rotate(90deg);
+        opacity: 0.8;
+    }
 
+    /* 🔴 다운로드 버튼 스타일 및 호버 애니메이션 추가 */
     #pdfBtn {
-        margin-top: 25px;
-        padding: 10px 20px;
-        border: 1px solid #000;
-        background: #000;
-        color: #fff;
-        font-family: 'Space Mono', monospace;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        margin-top: 40px;
+        padding: 8px 24px;
+        border: 1px solid #0000ff; /* 파란색 테두리 */
+        background: #ffffff; /* 흰색 배경 */
+        color: #0000ff; /* 파란색 글씨 */
+        font-family: 'Pretendard', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
         cursor: pointer;
         z-index: 10;
-        transition: background 0.2s, color 0.2s;
+        text-transform: lowercase;
+        /* 부드러운 호버 애니메이션 작동을 위한 트랜지션 설정 */
+        transition: background 0.3s cubic-bezier(0.25, 1, 0.5, 1), color 0.3s ease;
         display: none;
     }
-    #pdfBtn:hover { background: #0000ff; border-color: #0000ff; }
+    /* 다운로드 버튼 호버 시 색상이 반전되며 채워지는 인터랙션 효과 */
+    #pdfBtn:hover { 
+        background: #0000ff; 
+        color: #ffffff; 
+    }
 
     #status { position: fixed; bottom: 15px; left: 35px; font-size: 9px; color: #ccc; z-index: 100; pointer-events: none; }
 </style>
@@ -180,13 +241,24 @@
 <div id="stage"><div id="dragBox"><div id="ratioTag">1:1.00</div></div></div>
 
 <div id="detailView" onclick="closeDetail()">
-    <div id="closeDetail" onclick="closeDetail()">CLOSE</div>
-    <div id="detailName" onclick="goToLink()"></div>
+    
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        <div id="detailName" onclick="goToLink()"></div>
+        <div id="closeDetail" onclick="closeDetail()"></div>
+    </div>
+    
     <img id="detailBgImg" src="" onerror="this.style.display='none'">
-    <div id="detailPointBox" onclick="event.stopPropagation()"></div>
-    <div id="detailMeta"><span id="detailTime"></span> • <span id="detailLevel"></span></div>
-    <button id="pdfBtn" onclick="openPDF(event)">DOWNLOAD</button>
-    <div id="detailLangToggle">ENG / KR</div>
+    
+    <div id="detailBoxWrapper">
+        <div id="detailPointBox" onclick="event.stopPropagation()"></div>
+        
+        <div id="detailMeta">
+            <span id="detailTime"></span>
+            <span id="detailLevel"></span>
+        </div>
+    </div>
+    
+    <button id="pdfBtn" onclick="openPDF(event)">download</button>
 </div>
 
 <div id="right-panel">
@@ -199,13 +271,12 @@
 <div id="status">SYNCED WITH GOOGLE SHEETS</div>
 
 <script>
-// 🔴 2. 기본 설정을 영어(EN)로 초기 변경
 let currentLang = 'EN';
 let currentActiveItem = null;
 
 const translations = { 
-    KR: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "닫기", pdf: "다운로드" }, 
-    EN: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "DOWNLOAD" } 
+    KR: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "닫기", pdf: "download" }, 
+    EN: { title: "origami\narchive", tol: "TOLERANCE", status: "SYNCED WITH GOOGLE SHEETS", close: "CLOSE", pdf: "download" } 
 };
 const SHEET_ID = "1mUHp4mcSNIt5rGfNJSCVcvubCNxyarSay7xfvvuoa60";
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&t=${new Date().getTime()}`;
@@ -337,7 +408,6 @@ function updateUI() {
     const t = translations[currentLang];
     document.getElementById("brand-title").innerHTML = t.title.replace("\n", "<br>");
     document.getElementById("ui-tol").innerText = t.tol;
-    document.getElementById("closeDetail").innerText = t.close;
     document.getElementById("status").innerHTML = `● ${t.status}`;
 }
 
@@ -374,15 +444,28 @@ function refreshDetailContent() {
     document.getElementById("detailBgImg").style.display = 'block';
     
     const pointBox = document.getElementById("detailPointBox");
+    const wrapper = document.getElementById("detailBoxWrapper");
     if(item.ratio && !isNaN(item.ratio)) {
         pointBox.style.aspectRatio = `${item.ratio}`;
+        wrapper.style.aspectRatio = `${item.ratio}`;
     } else {
         pointBox.style.aspectRatio = "1 / 1";
+        wrapper.style.aspectRatio = "1 / 1";
     }
 
-    let time = item.time || "0 MIN"; let level = item.level || "LEV.1";
-    if(currentLang === 'EN') { time = time.toUpperCase().replace("분", " MIN"); level = level.toUpperCase().replace("쉬움", "EASY").replace("보통", "NORMAL").replace("어려움", "HARD").replace("매우", "VERY "); }
-    document.getElementById("detailTime").innerText = time; document.getElementById("detailLevel").innerText = level.includes('LEV') ? level : `LEV.${level}`;
+    let time = item.time || "0 min"; let level = item.level || "Lev.1";
+    if(currentLang === 'EN') { 
+        time = time.toLowerCase().replace("분", " min"); 
+        level = level.toLowerCase().replace("쉬움", "easy").replace("보통", "normal").replace("어려움", "hard").replace("매우", "very "); 
+    }
+    if (!level.includes('Lev')) {
+        level = `Lev. ${level}`;
+    } else {
+        level = level.replace("LEV.", "Lev. ").replace("LEV", "Lev. ");
+    }
+    
+    document.getElementById("detailTime").innerText = time; 
+    document.getElementById("detailLevel").innerText = level;
 
     const pdfBtn = document.getElementById("pdfBtn");
     if (item.pdf && (item.pdf.startsWith('http') || item.pdf.endsWith('.pdf'))) {
