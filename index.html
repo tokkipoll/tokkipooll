@@ -8,7 +8,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
 <style>
-    /* --- 기초 디자인 및 레이아웃 수정 --- */
+    /* --- 기초 디자인 --- */
     * { margin:0; padding:0; box-sizing:border-box; border-radius: 0 !important; }
     
     body { 
@@ -30,7 +30,7 @@
         pointer-events: none; z-index: 100;
     }
 
-    /* 좌측 상단 컨트롤 메뉴 그룹 (reset / kr/en) */
+    /* 좌측 상단 컨트롤 메뉴 그룹 */
     #ctrl-group {
         position: fixed; top: 150px; left: 35px;
         z-index: 100;
@@ -46,23 +46,22 @@
     #btn-reset { color: #0000ff; }
     #btn-lang { color: #000000; text-transform: lowercase; }
 
-    /* 좌측 하단 타이틀 */
+    /* 🔴 좌측 하단 타이틀 행간(line-height)을 1.1로 늘려 겹침 현상 해결 */
     #brand-title {
         position: fixed; bottom: 45px; left: 35px;
-        font-size: 42px; font-weight: 700; line-height: 0.95;
+        font-size: 42px; font-weight: 700; line-height: 1.1;
         letter-spacing: -0.02em; pointer-events: none; z-index: 100;
     }
 
-    /* 실시간 좌표 표시 (기능 유지, 눈에 띄지 않게 처리) */
     #coords {
         position: fixed; top: 15px; left: 35px;
         font-family: 'Space Mono', monospace;
         font-size: 11px; color: #aaa;
         pointer-events: none; z-index: 100;
-        display: none; /* 디자인을 위해 기본 숨김 처리 (필요시 block으로 변경 가능) */
+        display: none;
     }
 
-    /* 우측 세로형 오차범위(Tolerance) 패널 */
+    /* 🔴 우측 세로형 슬라이더 드래그 동작 및 네모 움직임 전면 수정 */
     #right-panel {
         position: fixed; right: 35px; top: 40px; bottom: 40px;
         width: 40px; display: flex; flex-direction: column; align-items: center;
@@ -77,19 +76,26 @@
     #slider-container {
         position: relative; flex: 1; width: 100%; display: flex; justify-content: center;
     }
-    /* 커스텀 세로 슬라이더 스타일 */
     #tol {
         -webkit-appearance: none; appearance: none;
-        width: 1px; height: 100%; background: #000;
-        outline: none; position: absolute; top: 0;
+        width: 40px; height: 100%; background: transparent;
+        outline: none; position: absolute; top: 0; cursor: pointer;
+        /* 브라우저가 제공하는 표준 세로 눈금선 모드 적용 */
+        writing-mode: vertical-lr;
+        direction: rtl; 
     }
-    /* 크롬/사파리 슬라이더 손잡이 사각형으로 변경 */
+    /* 가운뎃선 역할을 할 가상 요소 생성 */
+    #slider-container::before {
+        content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+        width: 1px; background: #000; pointer-events: none;
+    }
+    /* 크롬/사파리 세로 슬라이더 네모 손잡이 */
     #tol::-webkit-slider-thumb {
         -webkit-appearance: none; appearance: none;
         width: 14px; height: 14px; background: #000;
         cursor: pointer; border: none;
     }
-    /* 파이어폭스 슬라이더 손잡이 */
+    /* 파이어폭스 세로 슬라이더 네모 손잡이 */
     #tol::-moz-range-thumb {
         width: 14px; height: 14px; background: #000;
         cursor: pointer; border: none;
@@ -142,7 +148,6 @@
     }
     #pdfBtn:hover { background: #0000ff; border-color: #0000ff; }
 
-    /* 구글 시트 동기화 상태 텍스트 (숨김 혹은 좌측 하단 작게 배치 가능) */
     #status { position: fixed; bottom: 15px; left: 35px; font-size: 9px; color: #ccc; z-index: 100; pointer-events: none; }
 </style>
 </head>
@@ -172,7 +177,7 @@
 <div id="right-panel">
     <div id="ui-tol-wrapper"><span id="ui-tol">TOLERANCE</span>: <span id="tolText">50%</span></div>
     <div id="slider-container">
-        <input type="range" min="1" max="100" value="50" id="tol" style="transform: rotate(0deg); width: 1px; height: 100%;">
+        <input type="range" min="1" max="100" value="50" id="tol">
     </div>
 </div>
 
@@ -192,7 +197,6 @@ const ASSET_PATH = "foldingpapers/assets/";
 let db = []; let isDown = false; let startX, startY;
 let draggedImg = null, offX, offY;
 
-// 슬라이더 변경 시 텍스트 업데이트 이벤트 바인딩
 document.getElementById("tol").addEventListener("input", function() {
     document.getElementById("tolText").innerText = this.value + "%";
 });
@@ -367,7 +371,6 @@ function openPDF(e) {
     }
 }
 
-// 스페이스바 혹은 reset 클릭 시 작동하는 화면 초기화 기능
 function clearStage() {
     document.querySelectorAll(".resultContainer").forEach(el => el.remove()); 
     document.querySelectorAll(".scattered-img").forEach(el => el.remove());
